@@ -179,5 +179,8 @@ EUR). Retrieval, in order of preference:
   every cut must be gone.
 - **Within budget & bracket:** total upgrade spend ≤ the cap (or the user okayed an overage); color
   identity legal for every card; bracket rules satisfied.
+- **Double-check colors:** every card you add is within the commander's color identity — vet with
+  `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and check the search **CI**
+  column. One off-identity pip makes a card illegal in the deck.
 - **Real improvement:** the changes measurably move the deck toward the target shape (the gaps from Step 1
   are smaller), and each swap has a clear reason. Only then present the files.

@@ -9,9 +9,15 @@ Modes:
 
   Named:   python scryfall_search.py --named "Sheoldred, the Apocalypse" [--json]
 
-  Deck:    python scryfall_search.py --deck <arena-import>.txt [--tier N]
+  Deck:    python scryfall_search.py --deck <arena-import>.txt [--tier N] [--colors wubrg]
            Parses an MTG Arena import list, looks up each card's rarity, tallies the
            wildcard cost by rarity (basics are free), and checks it against the tier caps.
+           Reports the deck's color identity; with --colors it flags any card that is NOT
+           castable in those colors (e.g. --colors b catches a B/U or B/R card in mono-black).
+
+Search and named output include a CI (color identity) column — ALWAYS sanity-check that every
+card's colors fit the deck. Note: `c:b` matches any card *containing* black (incl. multicolor);
+to find cards castable in a given color use color identity `id<=b`, not `c:b`.
 
 Wildcard tier caps (common, uncommon, rare, mythic):
   1: 8/4/0/0   2: 12/6/2/1   3: 16/10/6/3   4: 20/14/12/6   5: unlimited
@@ -106,14 +112,15 @@ def print_table(cards):
     if not cards:
         print("No cards found.")
         return
-    print(f"{'R':<2} {'MV':>3}  {'NAME':<34} TYPE")
-    print("-" * 78)
+    print(f"{'R':<2} {'CI':<5} {'MV':>3}  {'NAME':<34} TYPE")
+    print("-" * 84)
     for c in cards:
         rl = RARITY_LETTER.get(c["rarity"], "?")
         mv = "" if c["mv"] is None else f"{c['mv']:.0f}"
-        print(f"{rl:<2} {mv:>3}  {(c['name'] or '')[:34]:<34} {(c['type_line'] or '')[:28]}")
-    print("-" * 78)
-    print(f"{len(cards)} cards (R = rarity: C/U/R/M)")
+        ci = c.get("color_identity") or "C"
+        print(f"{rl:<2} {ci:<5} {mv:>3}  {(c['name'] or '')[:34]:<34} {(c['type_line'] or '')[:28]}")
+    print("-" * 84)
+    print(f"{len(cards)} cards (R = rarity: C/U/R/M; CI = color identity — must fit your deck's colors)")
 
 
 LINE_RE = re.compile(r"^(\d+)\s+(.+?)(?:\s+\([^)]+\)\s+\S+)?\s*$")
@@ -139,10 +146,12 @@ def parse_deck(path):
                 yield int(m.group(1)), m.group(2).strip(), section
 
 
-def cost_deck(path, tier):
+def cost_deck(path, tier, colors=None):
     totals = [0, 0, 0, 0]  # C, U, R, M
     main = side = 0
     unknown, basics = [], 0
+    allowed = {ch for ch in (colors or "").upper() if ch in "WUBRG"}
+    deck_colors, offcolor = set(), []  # union of identities; cards outside `allowed`
     for count, name, section in parse_deck(path):
         if section == "main":
             main += count
@@ -155,6 +164,10 @@ def cost_deck(path, tier):
             card = named(name)
         except urllib.error.HTTPError:
             unknown.append(name); continue
+        ci = (card.get("color_identity") or "").replace("C", "").upper()
+        deck_colors |= set(ci)
+        if colors and not set(ci) <= allowed:
+            offcolor.append((name, ci or "C"))
         idx = RARITY_INDEX.get(card["rarity"])
         if idx is None:
             unknown.append(name); continue
@@ -189,6 +202,20 @@ def cost_deck(path, tier):
     if caps:
         print("\n" + ("FITS the tier (rare/mythic within caps)." if ok
                       else "OVER the tier on rare/mythic — see ✗ rows; these are the binding wildcards."))
+
+    di = "".join(c for c in "WUBRG" if c in deck_colors) or "C"
+    print(f"\nDeck color identity (non-basics): {di}")
+    if colors:
+        allowed_str = "".join(c for c in "WUBRG" if c in allowed) or "C"
+        if offcolor:
+            print(f"COLOR CHECK  ✗ — {len(offcolor)} card(s) NOT castable in id<={allowed_str}:")
+            for n, ci in offcolor:
+                print(f"      {n}  (color identity {ci})")
+            print("  Fix: replace with on-color cards, or add the missing colors to the mana base.")
+        else:
+            print(f"COLOR CHECK  ✓ — every card is castable within {allowed_str}.")
+    else:
+        print("(Tip: pass --colors <wubrg> to flag any card you can't cast, e.g. --colors b for mono-black.)")
     if unknown:
         print("\nCould not resolve (check spelling / Arena availability): " + ", ".join(unknown))
 
@@ -199,6 +226,8 @@ def main():
     ap.add_argument("--named", help="Exact/fuzzy single-card lookup (shows rarity).")
     ap.add_argument("--deck", help="Arena import .txt to tally wildcard cost.")
     ap.add_argument("--tier", type=int, choices=[1, 2, 3, 4, 5], help="Tier to check --deck against.")
+    ap.add_argument("--colors", help="With --deck: WUBRG letters of the deck's intended colors; flags any "
+                    "card not castable in that color identity (e.g. --colors b for mono-black).")
     ap.add_argument("--limit", type=int, default=30)
     ap.add_argument("--raw", action="store_true", help="Don't auto-add Standard/Arena filters.")
     ap.add_argument("--json", action="store_true")
@@ -206,13 +235,13 @@ def main():
 
     try:
         if args.deck:
-            cost_deck(args.deck, args.tier)
+            cost_deck(args.deck, args.tier, args.colors)
             return
         if args.named:
             card = named(args.named)
             print(json.dumps(card, indent=2, ensure_ascii=False) if args.json else
                   f"{RARITY_LETTER.get(card['rarity'], '?')}  {card['name']}  ({card['rarity']})  "
-                  f"MV{card['mv']:.0f}  {card['type_line']}")
+                  f"MV{card['mv']:.0f}  [CI {card['color_identity']}]  {card['type_line']}")
             return
         if not args.query:
             ap.error("provide a query, --named NAME, or --deck FILE")

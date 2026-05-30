@@ -233,6 +233,10 @@ the two files so nothing the user already has is mistakenly counted as a craft.
   exactly **60** (main) and **15** (sideboard, if BO3), with at most 4 of any non-basic card. Quick check:
   `awk '/^Sideboard/{s=1} /^[0-9]/{if(s)sb+=$1; else md+=$1} END{print "main",md,"side",sb}' <file>.txt`.
 - **Legality & Arena availability:** every non-basic card is `legal:standard` and on Arena. No banned cards.
+- **Colors — double-check castability:** every nonland card is castable in the deck's colors. Vet
+  candidates with color identity `id<=<colors>` (NOT `c:`, which also matches multicolor cards you can't
+  cast), and run the audit `python scripts/scryfall_search.py --deck <file>.txt --colors <wubrg>` — it must
+  print `COLOR CHECK ✓` with zero off-color cards (this catches e.g. a B/U or B/R card slipped into mono-black).
 - **Wildcard budget:** **rare and mythic** totals are within the tier's caps (the hard gate) — or the
   user has okayed an overage. Count only the copies the user still needs to craft (owned copies from
   `.mtg/collection/` cost nothing); count from zero if no collection is present. **Common and uncommon**

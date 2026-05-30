@@ -234,3 +234,7 @@ Then re-read `references/methodology.md` and confirm: exactly 100 cards includin
 ≥12 net-positive card-advantage pieces; ≥10 ramp; ~10 interaction + 2–4 wipes; 3–4 real win conditions;
 every card legal in the commander's color identity; bracket rules satisfied (Game Changer count, combo
 restrictions — see `references/brackets.md`); within budget if a cap was set. Only then present the files.
+
+**Double-check colors:** confirm every card's color identity is within the commander's — vet with
+`id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and glance at the search
+**CI** column for each card. A single off-identity pip makes the card illegal in the deck.

@@ -10,6 +10,10 @@ Output (table by default) shows, for each card: name, mana value (mv), type, col
 identity, and Cardmarket price in EUR (Scryfall's prices.eur). Use --json for the
 full structured list to parse programmatically.
 
+Every search row shows CI (color identity) — ALWAYS check it matches your commander's color
+identity; a card outside it is illegal in the deck. Use `id<=<identity>` for this, NOT `c:`
+(`c:b` matches any card *containing* black, including multicolor cards you can't run).
+
 Scryfall query syntax (see references/scryfall-syntax.md):
   id<=WB            color identity coverage (cards legal in a White/Black deck)
   o:"sacrifice"     oracle text contains phrase

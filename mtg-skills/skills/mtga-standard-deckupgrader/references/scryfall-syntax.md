@@ -35,11 +35,31 @@ sanity-check what's in Standard right now, see untapped.gg's "What's in Standard
 Every card object has a `rarity` field — the script prints it as the `R` column (c/u/r/m). Surface it for
 every card in the annotated decklist.
 
+## Colors — always double-check castability ⚠️
+
+A card can only go in the deck if it's **castable in the deck's colors**. This is **color identity**, and the
+filter is **`id<=<colors>`** — NOT `c:`.
+
+- **`id<=b`** → cards whose color identity fits a **mono-black** deck (mono-black + colorless only).
+- **`c:b`** → any card that *contains* black, **including multicolor** (B/U, B/R, B/G…). These pass `c:b`
+  but **cannot be cast** in a mono-black deck. Using `c:` to vet a mono/two-color deck is the classic bug:
+  e.g. *Dreadwing Scavenger* (B/U), *Perforating Artist* (B/R), *Cache Grab* (B/G) all match `c:b` yet are
+  uncastable on Swamps.
+
+**Rules:**
+1. Vet candidates with `legal:standard game:arena id<=<deck colors>` (e.g. `id<=b`, `id<=wu`).
+2. The script prints a **CI (color identity)** column on every search and `--named` lookup — glance at it
+   for every card; anything with an off-color pip doesn't belong.
+3. Before finalizing, run the color audit:
+   `python scripts/scryfall_search.py --deck <import>.txt --tier <N> --colors <wubrg>`
+   It reports the deck's color identity and flags every card you can't cast in those colors (`COLOR CHECK ✗`).
+
 ## Core operators
 
 | Operator | Meaning | Example |
 |---|---|---|
-| `c:rg` / `id<=rg` | Color / color identity | `c:r` mono-red, `c:wu` |
+| `id<=rg` | **Color identity** — castable in those colors (use this for deck legality) | `id<=r` mono-red, `id<=wu` Azorius |
+| `c:rg` | Color of the card itself (⚠️ matches multicolor too — see below) | `c:r` includes R/x gold cards |
 | `t:type` | Type / subtype | `t:creature`, `t:instant`, `t:land` |
 | `o:"text"` | Oracle text phrase | `o:"when ~ enters"`, `o:"landfall"` |
 | `mv<=2` | Mana value | `mv<=1`, `mv=3` |

@@ -195,6 +195,10 @@ and oracle text (`legal:standard`, `game:arena`, `r:rare`/`r:mythic`; every card
   list and every cut is gone.
 - **Legality & Arena availability:** every non-basic card is `legal:standard` and on Arena; no banned/rotated
   cards remain.
+- **Colors — double-check castability:** every nonland card (especially anything you add) is castable in the
+  deck's colors. Vet adds with color identity `id<=<colors>` (NOT `c:`, which also matches uncastable
+  multicolor cards), and run `python scripts/scryfall_search.py --deck arena.txt --colors <wubrg>` — it must
+  print `COLOR CHECK ✓` (catches e.g. a B/U or B/R card slipped into mono-black).
 - **Wildcard budget:** the **rares and mythics the user must craft** (owned copies excluded) are within the
   tier's caps, or the user okayed an overage; commons/uncommons reported as soft. Show the breakdown of the
   *changes*.

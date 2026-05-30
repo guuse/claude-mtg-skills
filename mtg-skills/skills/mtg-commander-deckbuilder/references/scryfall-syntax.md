@@ -31,6 +31,11 @@ are legal in the deck. Add `-is:funny -t:conspiracy` and, if you only want real 
 `(game:paper)` to avoid digital-only/joke results. Use `order=edhrec` almost always — it surfaces the
 cards real decks run.
 
+⚠️ **Use `id<=`, never `c:`, to vet color legality.** `c:b` matches any card *containing* black —
+including multicolor (B/U, B/R…) cards that are **illegal** outside their full color identity. Color
+identity (`id<=`) is what determines deck legality. The search table prints a **CI (color identity)**
+column for every card — glance at it and confirm each card fits the commander's identity before adding it.
+
 ## Function tags (the fast path for categories)
 
 Scryfall's `function:` (alias `otag:`) tags are curated and map cleanly onto the methodology. They're the

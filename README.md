@@ -73,6 +73,18 @@ Claude will confirm the **power bracket (1–5)** and **budget** if you haven't 
 work through the methodology and hand back two files: an annotated, priced decklist and a
 ready-to-import `.txt`. You can also start it explicitly with `/mtg-skills:mtg-commander-deckbuilder`.
 
+### Output & your collection
+
+Builds are written into a `.mtg/` folder in your current working directory (already covered by
+this repo's [`.gitignore`](.gitignore)):
+
+- **`.mtg/decks/`** — each deck gets its own folder here (e.g.
+  `.mtg/decks/atraxa-praetors-voice/`) holding its two files, `deck.md` (annotated) and
+  `import.txt` (ready to paste).
+- **`.mtg/collection/`** — drop a collection export here (a Moxfield / Archidekt / MTGGoldfish CSV,
+  or a plain `1 Card Name` list) and the builder will prefer cards you already own and flag what you
+  still need to buy.
+
 ## Requirements
 
 - **Claude Code** (any recent version with plugin/skill support).

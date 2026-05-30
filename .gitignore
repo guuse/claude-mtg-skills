@@ -1,0 +1,19 @@
+# MTG skill workspace — built decks and personal collection data, not source.
+# Keep the .mtg/ folder structure (via .gitkeep files) but ignore everything
+# the skill builds into it.
+.mtg/*
+!.mtg/.gitkeep
+
+# Keep .mtg/decks/ as an empty tracked folder, ignore the decks built into it.
+!.mtg/decks/
+.mtg/decks/*
+!.mtg/decks/.gitkeep
+
+# Keep .mtg/collection/ as an empty tracked folder, ignore collection data dropped in.
+!.mtg/collection/
+.mtg/collection/*
+!.mtg/collection/.gitkeep
+
+# Python bytecode from the bundled helper scripts.
+__pycache__/
+*.pyc

@@ -34,7 +34,30 @@ Always produce **two files** at the end (the user expects both):
 2. **A plain importable list** (`<commander>-import.txt`) — one card per line as `1 Card Name`, ready to
    paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
-Use the `present_files` tool to share both. Save them to the outputs directory.
+Use the `present_files` tool to share both, and **save them in their own folder under
+`.mtg/decks/`** in the user's current working directory: `.mtg/decks/<deck-slug>/deck.md` and
+`.mtg/decks/<deck-slug>/import.txt`. Create the folder if it doesn't exist. The slug is the
+commander name (lowercase, spaces→hyphens, punctuation dropped), e.g.
+`.mtg/decks/atraxa-praetors-voice/`. If the user already has a folder for that commander and wants a
+different build, add a short distinguishing suffix (e.g. `atraxa-praetors-voice-superfriends`) so
+existing decks aren't overwritten. See "The `.mtg` workspace" below.
+
+## The `.mtg` workspace
+
+All of this skill's file I/O lives in a `.mtg/` directory in the user's current working directory.
+It is conventionally git-ignored (built output and personal collection data, not source):
+
+- **`.mtg/decks/`** — where built decks are written. **Each deck gets its own subfolder**,
+  `.mtg/decks/<deck-slug>/`, holding that deck's two deliverable files (`deck.md` and `import.txt`).
+  Create the directories if they're missing.
+- **`.mtg/collection/`** — where the user's **existing card collection** lives (the cards they
+  already own), so decks can be built from — or biased toward — what they have. At the **start of a
+  build, check whether `.mtg/collection/` exists and holds a collection file** (a Moxfield /
+  Archidekt / MTGGoldfish CSV export, or a plain `1 Card Name` text list). If it does, read it and:
+  prefer cards the user already owns when two choices are otherwise close, and in the annotated
+  decklist flag which cards they still need to buy and the cost of just those. If it's absent or
+  empty, build normally and let the user know they can drop a collection export into
+  `.mtg/collection/` to get collection-aware builds next time.
 
 ## Before you build: always confirm bracket and budget
 

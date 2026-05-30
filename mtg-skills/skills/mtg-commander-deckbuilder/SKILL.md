@@ -23,6 +23,12 @@ ramp, enough interaction, the right land count, a sensible curve, and real win c
 A deck is not a list of the 99 most powerful cards in a color. It is a machine where the parts reinforce
 each other. The whole job of this skill is to build that machine.
 
+**Build it with the user, not just for them.** After you've settled the commander and found the synergy
+engine, check in on the **direction** before committing to a full 99, and present the near-final list for
+reaction before writing files — invite them to swap pet cards in, push the power up or down, or change the
+plan. Don't hand over a finished list as the first thing they see. Keep it light (this is a fresh build, so
+fewer check-ins than an upgrade) but never one-shot: confirm the plan, then confirm the list.
+
 ## The deliverable
 
 Always produce **two files** at the end (the user expects both):
@@ -44,8 +50,14 @@ existing decks aren't overwritten. See "The `.mtg` workspace" below.
 
 ## The `.mtg` workspace
 
-All of this skill's file I/O lives in a `.mtg/` directory in the user's current working directory.
-It is conventionally git-ignored (built output and personal collection data, not source):
+All of this skill's file I/O lives in a `.mtg/` directory in the user's current working directory,
+conventionally git-ignored (built output and personal collection data, not source).
+
+**If there's no clear working directory to write to** — e.g. you're running in an interactive chat with no
+project folder — **ask the user where the `.mtg/decks/` and `.mtg/collection/` directories should live**
+(prompt for a path) before reading or writing anything, and use that location for the rest of the session.
+
+The subdirectories:
 
 - **`.mtg/decks/`** — where built decks are written. **Each deck gets its own subfolder**,
   `.mtg/decks/<deck-slug>/`, holding that deck's two deliverable files (`deck.md` and `import.txt`).
@@ -99,6 +111,11 @@ winning lists run), then use **Scryfall to fill gaps** the proven lists miss and
 bracket-appropriate alternatives. Gather ~40 themed candidates; you'll cut later. Apply the mana-value
 rubric in `references/methodology.md` as a first filter (expensive cards must earn their slot).
 
+**Check in on the direction here.** Before sinking time into the full build, tell the user the plan in a
+couple of sentences — the theme/engine you're leaning into, how the deck intends to win, and a handful of
+signature cards — and ask if that's the deck they want. This is the cheapest moment to change course (lean
+more aggressive, swap the wincon, go budget, lean into a pet card). Adjust to their answer, then build.
+
 ### Step 3 — Card advantage (the hidden engine)
 Dedicate **12+ cards** to *net-positive* card advantage — cards that replace themselves **and** draw more
 (a card that draws 2 then discards 2 is **not** advantage). Aim ~8 of these at MV ≤ 3 and ~4 at MV ≥ 4,
@@ -129,6 +146,13 @@ actually win?* Ensure **3–4 real win conditions** — cards that, with the dec
 likely close the game. If a win con is missing, use Scryfall (search the commander's payoff keywords:
 power, "loses life", artifact, etc.) to find the perfect closer and swap it in. Iterate until the deck has
 a clear, repeatable path to victory.
+
+### Step 8 — Present the list and refine before writing files
+**Show the user the finished list before you save anything.** Walk them through it briefly — the category
+counts, how it wins, the priciest cards, and any close calls you made (the "I kept X over Y because…"
+choices) — and invite changes: pet cards to slot in, cards to cut, more or less power, a tighter budget.
+Make the swaps they ask for (re-checking the category counts and budget each time) and keep going until
+they're happy. **Only then** run the quality checks below and write the two files.
 
 ## How to drive the data sources
 

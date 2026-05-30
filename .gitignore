@@ -17,3 +17,6 @@
 # Python bytecode from the bundled helper scripts.
 __pycache__/
 *.pyc
+
+# Claude Code local config and worktrees — not part of the published skills.
+.claude/

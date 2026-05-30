@@ -6,8 +6,7 @@
     {
       "name": "mtg-skills",
       "source": "./mtg-skills",
-      "description": "Magic: The Gathering skills for Claude Code — Commander/EDH deckbuilding, with more to come.",
-      "version": "1.0.0"
+      "description": "Magic: The Gathering deckbuilding skills for Claude Code — build and upgrade Commander/EDH and MTG Arena Standard decks, with more to come."
     }
   ]
 }

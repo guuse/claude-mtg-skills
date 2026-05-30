@@ -12,6 +12,9 @@ The repo is set up as a **Claude Code plugin marketplace**, so installing is a t
 | Skill | What it does |
 |-------|--------------|
 | **mtg-commander-deckbuilder** | Builds a complete, balanced **100-card Commander (EDH) deck** around any commander you name. Pulls proven cards from EDHREC and mtgdecks.net, fills gaps and prices everything via Scryfall (Cardmarket EUR), and applies a disciplined 7-step methodology — correct ramp, card advantage, interaction, land count, curve, and real win conditions. Produces an **annotated decklist** (grouped by role, per-card reasons + prices, total cost) and a **plain importable list** (`1 Card Name`, ready to paste into Moxfield / Archidekt / mtggoldfish). Bracket- and budget-aware. |
+| **mtga-standard-deckbuilder** | Builds a **60-card Standard deck for MTG Arena**, centerpiece-first and tuned against the current ladder meta (untapped.gg / mtggoldfish). Verifies Standard legality, rarity, and Arena availability via Scryfall, and costs the deck in **Arena wildcards** against a budget tier (1–5) and your owned collection. Produces an **annotated decklist** (roles, rarity per card, mana curve, wildcard-cost breakdown, meta plan) and an **Arena import list** ready to paste in-client. Supports BO1 ladder and BO3 + sideboard. |
+| **mtg-commander-deckupgrader** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
+| **mtga-standard-deckupgrader** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
 
 ## Install
 
@@ -65,13 +68,24 @@ Claude Code discovers the skill on the next session start. If you added it mid-s
 
 ## Usage
 
-Just ask, in plain language — for example:
+Just ask, in plain language — the right skill triggers automatically. For example:
 
 > Build me a Bracket 3 Atraxa, Praetors' Voice deck under €150.
 
-Claude will confirm the **power bracket (1–5)** and **budget** if you haven't given them, then
-work through the methodology and hand back two files: an annotated, priced decklist and a
-ready-to-import `.txt`. You can also start it explicitly with `/mtg-skills:mtg-commander-deckbuilder`.
+> Build me a Standard mono-red aggro deck for Arena at wildcard tier 3.
+
+To **upgrade an existing deck**, paste your current list right into the prompt:
+
+> Here's my Commander list, upgrade it for about €30: \<paste decklist\>
+
+> Improve this Standard deck against the meta, tier 2: \<paste Arena export\>
+
+Claude confirms the few parameters it needs — power bracket and budget for Commander, or
+centerpiece/collection, wildcard tier, and BO1/BO3 for Arena Standard (upgrades just ask for a
+budget, usually a small one) — then works through the methodology and hands back two files: an
+annotated decklist and a ready-to-import list. You can also start a skill explicitly, e.g.
+`/mtg-skills:mtg-commander-deckbuilder`, `/mtg-skills:mtga-standard-deckbuilder`,
+`/mtg-skills:mtg-commander-deckupgrader`, or `/mtg-skills:mtga-standard-deckupgrader`.
 
 ### Output & your collection
 

@@ -1,0 +1,9 @@
+{
+  "name": "mtg-skills",
+  "description": "Magic: The Gathering skills for Claude Code. Currently: a Commander/EDH deck builder that brews a tuned, priced 100-card deck around any commander.",
+  "version": "1.0.0",
+  "author": { "name": "guuse" },
+  "homepage": "https://github.com/guuse/claude-mtg-skills",
+  "repository": "https://github.com/guuse/claude-mtg-skills",
+  "license": "MIT"
+}

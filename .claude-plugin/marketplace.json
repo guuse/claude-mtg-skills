@@ -1,0 +1,13 @@
+{
+  "name": "claude-mtg-skills",
+  "version": "1.0.0",
+  "owner": { "name": "guuse" },
+  "plugins": [
+    {
+      "name": "mtg-skills",
+      "source": "./mtg-skills",
+      "description": "Magic: The Gathering skills for Claude Code — Commander/EDH deckbuilding, with more to come.",
+      "version": "1.0.0"
+    }
+  ]
+}

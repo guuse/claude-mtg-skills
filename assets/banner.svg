@@ -1,0 +1,31 @@
+<svg width="640" height="240" viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#15101f"/>
+      <stop offset="100%" stop-color="#0c1422"/>
+    </linearGradient>
+    <linearGradient id="mana4" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#FFE9A8"/>
+      <stop offset="27%" stop-color="#7EC8F5"/>
+      <stop offset="52%" stop-color="#86E0A8"/>
+      <stop offset="76%" stop-color="#FF8E6E"/>
+      <stop offset="100%" stop-color="#D8CCC6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="640" height="240" rx="40" fill="url(#bg4)"/>
+
+  <!-- icon: small fan of 3 tapped cards -->
+  <g transform="translate(118 124)">
+    <g transform="rotate(-22)"><rect x="-30" y="-58" width="60" height="104" rx="11" fill="#0E68AB" stroke="#0c1422" stroke-width="4"/><circle cx="0" cy="-30" r="11" fill="#AAE0FA"/></g>
+    <g transform="rotate(0)"><rect x="-30" y="-60" width="60" height="104" rx="11" fill="#D3202A" stroke="#0c1422" stroke-width="4"/><circle cx="0" cy="-32" r="11" fill="#F9AA8F"/></g>
+    <g transform="rotate(22)"><rect x="-30" y="-58" width="60" height="104" rx="11" fill="#E8D27A" stroke="#0c1422" stroke-width="4"/><circle cx="0" cy="-30" r="11" fill="#FFFBD5"/></g>
+    <!-- spark -->
+    <path d="M2 -86 c4 13 5 14 18 18 c-13 4 -14 5 -18 18 c-4 -13 -5 -14 -18 -18 c13 -4 14 -5 18 -18 Z" fill="#ffcf78"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="210" y="118" font-family="Verdana, 'DejaVu Sans', sans-serif" font-size="58" font-weight="bold" fill="url(#mana4)">MTG Skills</text>
+  <text x="212" y="160" font-family="Verdana, 'DejaVu Sans', sans-serif" font-size="22" font-weight="bold" fill="#9aa6b8" letter-spacing="2">for Claude Code</text>
+  <text x="212" y="196" font-family="Verdana, 'DejaVu Sans', sans-serif" font-size="17" fill="#5f6b80">brew · build · tune · untap the meta</text>
+</svg>

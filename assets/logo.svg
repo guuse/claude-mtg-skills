@@ -1,0 +1,51 @@
+<svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg2" cx="50%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#10243a"/>
+      <stop offset="100%" stop-color="#0a1422"/>
+    </radialGradient>
+    <linearGradient id="sparkle2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3c4"/>
+      <stop offset="100%" stop-color="#ffb84d"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="320" height="320" rx="64" fill="url(#bg2)"/>
+
+  <!-- fanned hand of 5 cards, one per mana color, rotated around a low pivot -->
+  <g transform="translate(160 250)">
+    <!-- each card: rounded rect 70x100, anchored at bottom-center, fanned -->
+    <g transform="rotate(-40)">
+      <rect x="-35" y="-150" width="70" height="120" rx="12" fill="#00733E" stroke="#0a1422" stroke-width="4"/>
+      <circle cx="0" cy="-115" r="15" fill="#9BD3AE"/><circle cx="0" cy="-118" r="7" fill="#00733E"/>
+    </g>
+    <g transform="rotate(-20)">
+      <rect x="-35" y="-150" width="70" height="120" rx="12" fill="#D3202A" stroke="#0a1422" stroke-width="4"/>
+      <circle cx="0" cy="-115" r="15" fill="#F9AA8F"/>
+      <path d="M0 -125 c5 5 7 9 7 13 a7 7 0 0 1 -14 0 c0 -3 2 -6 4 -8 c0 3 2 4 3 5 c-1 -4 0 -7 0 -10 Z" fill="#D3202A"/>
+    </g>
+    <g transform="rotate(0)">
+      <rect x="-35" y="-152" width="70" height="120" rx="12" fill="#CBC2BF" stroke="#0a1422" stroke-width="4"/>
+      <circle cx="0" cy="-117" r="15" fill="#efeae6"/>
+      <circle cx="0" cy="-119" r="8" fill="#2b2622"/>
+      <circle cx="-3" cy="-120" r="2" fill="#efeae6"/><circle cx="3" cy="-120" r="2" fill="#efeae6"/>
+    </g>
+    <g transform="rotate(20)">
+      <rect x="-35" y="-150" width="70" height="120" rx="12" fill="#0E68AB" stroke="#0a1422" stroke-width="4"/>
+      <circle cx="0" cy="-115" r="15" fill="#AAE0FA"/>
+      <path d="M0 -125 c4 6 7 9 7 12 a7 7 0 1 1 -14 0 c0 -3 3 -6 7 -12 Z" fill="#0E68AB"/>
+    </g>
+    <g transform="rotate(40)">
+      <rect x="-35" y="-150" width="70" height="120" rx="12" fill="#E8D27A" stroke="#0a1422" stroke-width="4"/>
+      <circle cx="0" cy="-115" r="15" fill="#FFFBD5"/><circle cx="0" cy="-115" r="6" fill="#d9a93a"/>
+      <g stroke="#d9a93a" stroke-width="2.4" stroke-linecap="round">
+        <line x1="0" y1="-127" x2="0" y2="-123"/><line x1="0" y1="-107" x2="0" y2="-103"/>
+        <line x1="-12" y1="-115" x2="-8" y2="-115"/><line x1="8" y1="-115" x2="12" y2="-115"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- AI sparkle -->
+  <path d="M236 96 C242 116 244 118 264 124 C244 130 242 132 236 152 C230 132 228 130 208 124 C228 118 230 116 236 96 Z"
+        fill="url(#sparkle2)"/>
+</svg>

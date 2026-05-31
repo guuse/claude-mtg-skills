@@ -1,8 +1,27 @@
+<div align="center">
+
+<img src="assets/logo.png" alt="claude-mtg-skills" width="180">
+
 # claude-mtg-skills
+
+<hr>
+
+### 🃏 Build, brew, and tune real Magic: The Gathering decks — right from your terminal. 🤖
+
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757?logo=anthropic&logoColor=white)](https://code.claude.com)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](#requirements)
+[![SQLite](https://img.shields.io/badge/SQLite-local%20db-003B57?logo=sqlite&logoColor=white)](#skills)
+[![Data: Scryfall](https://img.shields.io/badge/data-Scryfall-635994)](https://scryfall.com)
+[![coverage](https://img.shields.io/badge/coverage-%E2%89%A595%25-3fb950)](.github/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT-3fb950)](LICENSE)
+
+</div>
+
+---
 
 A public collection of **Magic: The Gathering skills for [Claude Code](https://code.claude.com)**.
 Install once and let Claude build, brew, and tune real decks for you — grounded in proven card
-data and priced from live sources.
+data and priced from live sources. No spreadsheets, no 40 browser tabs — just ask. 🪄
 
 The repo is set up as a **Claude Code plugin marketplace**, so installing is a two-line command
 (no cloning required). Manual install is documented below as a fallback.

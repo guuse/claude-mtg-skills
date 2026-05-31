@@ -8,8 +8,10 @@ published skill or the plugin.
 python -m unittest discover -s tests -v
 ```
 
-No network and no bulk download: `test_mtg_scryfall.py` builds a small crafted card set
-into a temporary SQLite database and checks:
+No network and no bulk download. Two files:
+
+**`test_mtg_scryfall.py`** — the engine smoke test. Builds a small crafted card set into a
+temporary SQLite database and checks:
 
 - the build/collapse logic — one row per `oracle_id`, cheapest-printing price, latest
   printing's rarity, dropped tokens, hidden funny/un-cards;
@@ -18,5 +20,16 @@ into a temporary SQLite database and checks:
 - the routing rule — `function:`/`otag:`/`set:`/unknown operators make `to_sql()` return
   `None` so the caller falls back to the live Scryfall API.
 
-CI runs the same suite across Python 3.9–3.13 (see `.github/workflows/ci.yml`). The skills
-are stdlib-only, so there are no dependencies to install.
+**`test_tier2.py`** — broader deterministic coverage:
+
+- Arena wildcard math + import parsing (`mtg_scryfall.arena`): tier caps, over/hard/soft,
+  off-color flagging, basics, unknown cards;
+- the streaming bulk-JSON parser at awkward buffer boundaries (objects split across chunks);
+- database status / 30-day staleness boundary and the auto-build availability paths;
+- `simplify_api` via a canned card dict (no Scryfall call), including double-faced cards;
+- additional query operators — `c:`, `id>=`, guild/wedge nicknames, `pow`, rarity abbrev,
+  `t:permanent`, nested `or`/parens, `kw:`.
+
+CI runs the suite across Python **3.9, 3.12, 3.13** (see `.github/workflows/ci.yml`) — the
+latest two plus a 3.9 floor (macOS/older-distro system Python). The skills are stdlib-only,
+so there are no dependencies to install.

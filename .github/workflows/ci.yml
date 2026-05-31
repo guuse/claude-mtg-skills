@@ -12,8 +12,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The skills are stdlib-only (sqlite3 + json), so test the range we claim to support.
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        # Focus on the latest versions; keep 3.9 as a floor job because real execution
+        # environments (macOS system python3, older LTS distros) are often that old.
+        python-version: ["3.9", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4

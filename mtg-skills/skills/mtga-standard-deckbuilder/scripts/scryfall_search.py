@@ -26,7 +26,6 @@ Wildcard tier caps (common, uncommon, rare, mythic):
 import argparse
 import json
 import os
-import re
 import sys
 
 # Find the shared mtg_scryfall library. Plugin layout puts it at mtg-skills/lib
@@ -50,18 +49,9 @@ except ImportError as e:  # pragma: no cover
           file=sys.stderr)
     sys.exit(2)
 
-TIER_CAPS = {
-    1: (8, 4, 0, 0),
-    2: (12, 6, 2, 1),
-    3: (16, 10, 6, 3),
-    4: (20, 14, 12, 6),
-    5: (float("inf"),) * 4,
-}
+# Wildcard tier caps, Arena-import parsing, and the tally math are shared, tested logic
+# in mtg_scryfall.arena. Display glyphs and the rendering below stay local (presentation).
 RARITY_LETTER = {"common": "C", "uncommon": "U", "rare": "R", "mythic": "M"}
-RARITY_INDEX = {"common": 0, "uncommon": 1, "rare": 2, "mythic": 3}
-BASICS = {"plains", "island", "swamp", "mountain", "forest", "wastes",
-          "snow-covered plains", "snow-covered island", "snow-covered swamp",
-          "snow-covered mountain", "snow-covered forest"}
 
 
 def search(query, limit, raw):
@@ -85,100 +75,53 @@ def print_table(cards):
     print(f"{len(cards)} cards (R = rarity: C/U/R/M; CI = color identity — must fit your deck's colors)")
 
 
-LINE_RE = re.compile(r"^(\d+)\s+(.+?)(?:\s+\([^)]+\)\s+\S+)?\s*$")
-
-
-def parse_deck(path):
-    """Yield (count, name, section) from an Arena import file."""
-    section = "main"
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            s = line.strip()
-            if not s:
-                continue
-            low = s.lower()
-            if low in ("deck", "maindeck"):
-                section = "main"; continue
-            if low in ("sideboard", "side"):
-                section = "side"; continue
-            if low in ("commander", "companion"):
-                section = low; continue
-            m = LINE_RE.match(s)
-            if m:
-                yield int(m.group(1)), m.group(2).strip(), section
-
-
 def cost_deck(path, tier, colors=None):
-    totals = [0, 0, 0, 0]  # C, U, R, M
-    main = side = 0
-    unknown, basics = [], 0
-    allowed = {ch for ch in (colors or "").upper() if ch in "WUBRG"}
-    deck_colors, offcolor = set(), []  # union of identities; cards outside `allowed`
-    for count, name, section in parse_deck(path):
-        if section == "main":
-            main += count
-        elif section == "side":
-            side += count
-        if name.lower() in BASICS:
-            basics += count
-            continue
-        card = mtg_scryfall.named(name)
-        if not card:
-            unknown.append(name); continue
-        ci = (card.get("color_identity") or "").replace("C", "").upper()
-        deck_colors |= set(ci)
-        if colors and not set(ci) <= allowed:
-            offcolor.append((name, ci or "C"))
-        idx = RARITY_INDEX.get(card["rarity"])
-        if idx is None:
-            unknown.append(name); continue
-        totals[idx] += count
+    """Tally the deck's wildcard cost (shared lib) and render the report."""
+    result = mtg_scryfall.tally_wildcards(
+        mtg_scryfall.parse_deck(path), tier, allowed_colors=colors)
+    render_wildcards(result)
 
-    print(f"Deck size: main {main}, sideboard {side}, basics {basics} (free)\n")
-    caps = TIER_CAPS.get(tier)
-    labels = ["Common", "Uncommon", "Rare", "Mythic"]
+
+def render_wildcards(result):
+    """Render a tally_wildcards() result. Presentation only — the numbers are the lib's."""
+    print(f"Deck size: main {result['main']}, sideboard {result['side']}, "
+          f"basics {result['basics']} (free)\n")
+    caps = result["caps"]
     if caps:
         capstr = "/".join("∞" if c == float("inf") else str(c) for c in caps)
-        print(f"Wildcard cost (Tier {tier} caps: {capstr}):")
+        print(f"Wildcard cost (Tier {result['tier']} caps: {capstr}):")
     else:
         print("Wildcard cost:")
-    # Rare/mythic are the hard gate (scarce wildcards, counted from zero).
-    # Common/uncommon are soft (cheap, usually already owned) — reported, not failed.
-    ok = True
-    for i, lbl in enumerate(labels):
+    # Rare/mythic are the hard gate (scarce wildcards); common/uncommon are soft.
+    for row in result["rows"]:
         mark = ""
-        hard = i >= 2  # rare, mythic
         if caps:
-            if totals[i] > caps[i]:
-                if hard:
-                    mark = f"  ✗ OVER cap by {totals[i] - caps[i]} (hard — swap for cheaper role-twins or trim copies)"
-                    ok = False
-                else:
-                    mark = f"  • over the {caps[i]} target (soft — commons/uncommons are cheap and often already owned)"
-            elif totals[i] == caps[i] and caps[i] != float("inf"):
+            if row["over"] and row["hard"]:
+                mark = f"  ✗ OVER cap by {row['over']} (hard — swap for cheaper role-twins or trim copies)"
+            elif row["over"]:
+                mark = f"  • over the {row['cap']} target (soft — commons/uncommons are cheap and often already owned)"
+            elif row["at_cap"]:
                 mark = "  ✓ (at cap)"
             else:
                 mark = "  ✓"
-        print(f"  {lbl:<9} {totals[i]:>3}{mark}")
+        print(f"  {row['label']:<9} {row['count']:>3}{mark}")
     if caps:
-        print("\n" + ("FITS the tier (rare/mythic within caps)." if ok
+        print("\n" + ("FITS the tier (rare/mythic within caps)." if result["fits"]
                       else "OVER the tier on rare/mythic — see ✗ rows; these are the binding wildcards."))
 
-    di = "".join(c for c in "WUBRG" if c in deck_colors) or "C"
-    print(f"\nDeck color identity (non-basics): {di}")
-    if colors:
-        allowed_str = "".join(c for c in "WUBRG" if c in allowed) or "C"
-        if offcolor:
-            print(f"COLOR CHECK  ✗ — {len(offcolor)} card(s) NOT castable in id<={allowed_str}:")
-            for n, ci in offcolor:
+    print(f"\nDeck color identity (non-basics): {result['deck_color_identity']}")
+    if result["allowed"] is not None:
+        if result["offcolor"]:
+            print(f"COLOR CHECK  ✗ — {len(result['offcolor'])} card(s) NOT castable in id<={result['allowed']}:")
+            for n, ci in result["offcolor"]:
                 print(f"      {n}  (color identity {ci})")
             print("  Fix: replace with on-color cards, or add the missing colors to the mana base.")
         else:
-            print(f"COLOR CHECK  ✓ — every card is castable within {allowed_str}.")
+            print(f"COLOR CHECK  ✓ — every card is castable within {result['allowed']}.")
     else:
         print("(Tip: pass --colors <wubrg> to flag any card you can't cast, e.g. --colors b for mono-black.)")
-    if unknown:
-        print("\nCould not resolve (check spelling / Arena availability): " + ", ".join(unknown))
+    if result["unknown"]:
+        print("\nCould not resolve (check spelling / Arena availability): " + ", ".join(result["unknown"]))
 
 
 def main():

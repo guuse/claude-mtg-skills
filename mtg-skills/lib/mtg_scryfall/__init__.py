@@ -22,6 +22,8 @@ from .query import search, named, to_sql, SUPPORTED_FALLBACK
 from .build import build_database, build_from_json
 from .status import database_status, ensure_database, STALE_AFTER_DAYS
 from .cli import ensure_ready
+from .arena import TIER_CAPS, BASICS, parse_deck, tally_wildcards
+from .validate import validate_commander_import, validate_arena_import
 
 __all__ = [
     "default_db_path",
@@ -36,4 +38,10 @@ __all__ = [
     "ensure_database",
     "ensure_ready",
     "STALE_AFTER_DAYS",
+    "TIER_CAPS",
+    "BASICS",
+    "parse_deck",
+    "tally_wildcards",
+    "validate_commander_import",
+    "validate_arena_import",
 ]

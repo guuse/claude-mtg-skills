@@ -17,10 +17,10 @@ jobs:
         python-version: ["3.9", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -33,3 +33,73 @@ jobs:
         # No pip install and no network: the suite builds a crafted mini-database and
         # exercises the build/collapse logic and the Scryfall->SQL query translator.
         run: python -m unittest discover -s tests -v
+
+  coverage:
+    name: Coverage report (PR comment)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install coverage
+        run: python -m pip install --quiet coverage
+
+      - name: Run tests under coverage
+        id: run
+        run: |
+          set +e
+          coverage run --source=mtg-skills/lib/mtg_scryfall -m unittest discover -s tests 2>&1 | tee test_output.txt
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Build comment body
+        if: always()
+        run: |
+          if grep -qE '^OK' test_output.txt; then
+            status="✅ **passing**"
+          else
+            status="❌ **failing**"
+          fi
+          summary="$(grep -E '^Ran [0-9]+ tests' test_output.txt | tail -n1)"
+          {
+            echo "<!-- mtg-ci-coverage -->"
+            echo "### Tests & coverage — $status"
+            echo ""
+            echo "\`$summary\` · Python 3.13 · offline (network mocked)"
+            echo ""
+            echo "<details><summary>Coverage by module (shared lib)</summary>"
+            echo ""
+            echo '```'
+            coverage report
+            echo '```'
+            echo "</details>"
+          } > comment.md
+
+      - name: Upsert PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          marker="<!-- mtg-ci-coverage -->"
+          existing="$(gh api "repos/$REPO/issues/$PR/comments" \
+            --jq ".[] | select(.body | contains(\"$marker\")) | .id" | head -n1)"
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -F body=@comment.md >/dev/null
+            echo "updated comment $existing"
+          else
+            gh pr comment "$PR" --body-file comment.md
+            echo "created new comment"
+          fi
+
+      - name: Reflect test result in job status
+        if: always()
+        run: exit ${{ steps.run.outputs.exit }}

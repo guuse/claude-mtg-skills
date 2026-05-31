@@ -24,6 +24,12 @@
 __pycache__/
 *.pyc
 
+# Test/coverage artifacts (CI generates these; not source).
+.coverage
+htmlcov/
+comment.md
+test_output.txt
+
 # Claude Code local config and worktrees — not part of the published skills.
 .claude/
 

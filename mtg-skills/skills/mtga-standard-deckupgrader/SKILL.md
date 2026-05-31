@@ -175,13 +175,21 @@ and oracle text (`legal:standard`, `game:arena`, `r:rare`/`r:mythic`; every card
 **untapped.gg** (`https://mtga.untapped.gg/constructed/standard`) for the BO1 ladder meta; **mtggoldfish**
 (`https://www.mtggoldfish.com/metagame/standard`) for metagame %s and netdecks.
 
+**Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
+SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
+**mtg-scryfall-database** skill) instead of the API, built **automatically on first use** (one-time
+~540 MB download). At the **start**, if it reports the data is **stale (>30 days)**, tell the user and
+**ask** whether to refresh (for Arena this matters little — only rarity, Arena availability, and Standard
+legality are used). `function:`/`otag:` (Tagger) queries route to the live API automatically.
+
 **Retrieval (use what's available, in order):**
 - **Code execution with network** → `python scripts/scryfall_search.py "<query>" --limit 30` to search
-  (Standard-legal + Arena, rarity shown), and `python scripts/scryfall_search.py --deck <arena>.txt --tier
-  <N>` to tally a list's wildcard cost vs the tier. The script counts every non-basic card from zero — when
-  a collection is loaded, subtract owned copies from its totals yourself.
+  (reads the local DB, auto-builds on first use; Standard-legal + Arena, rarity shown), and
+  `python scripts/scryfall_search.py --deck <arena>.txt --tier <N>` to tally a list's wildcard cost vs the
+  tier. The script counts every non-basic card from zero — when a collection is loaded, subtract owned
+  copies from its totals yourself.
 - **No code-exec network, but web tools** → `web_search` then `web_fetch` (web_fetch only takes URLs from a
-  prior search).
+  prior search). No DB can be built here — that's the expected fallback.
 - **Neither** → tell the user the environment needs network to `api.scryfall.com`, `untapped.gg`, and
   `mtggoldfish.com`, and offer to proceed from known knowledge with the caveat that legality, rarity, and
   the current meta are unverified (Standard rotates and Arena availability varies — flag this clearly).

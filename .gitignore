@@ -14,9 +14,24 @@
 .mtg/collection/*
 !.mtg/collection/.gitkeep
 
+# Keep .mtg/database/ as an empty tracked folder, ignore the built card database
+# (cards.sqlite + meta.json) — it's a large, machine-built artifact, not source.
+!.mtg/database/
+.mtg/database/*
+!.mtg/database/.gitkeep
+
 # Python bytecode from the bundled helper scripts.
 __pycache__/
 *.pyc
 
+# Test/coverage artifacts (CI generates these; not source).
+.coverage
+htmlcov/
+comment.md
+test_output.txt
+
 # Claude Code local config and worktrees — not part of the published skills.
 .claude/
+
+# Local design docs (ADRs etc.) — kept locally, not committed.
+docs/

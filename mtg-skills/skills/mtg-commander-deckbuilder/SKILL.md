@@ -172,24 +172,36 @@ and price everything**. Concretely:
    per-card price for the deck total and for budget trimming. The query cookbook
    (`references/scryfall-syntax.md`) gives ready-made searches for each step.
 
+**Scryfall reads come from the local card database.** The bundled `scripts/scryfall_search.py`
+queries a **local SQLite database** (`.mtg/database/cards.sqlite`) built from Scryfall's bulk data
+instead of hammering the API — see the **mtg-scryfall-database** skill. The database is built
+**automatically on first use** (a one-time ~540 MB download), so you don't need to run anything
+first; just call the script. At the **start of a build**, if the script reports the data is **stale
+(older than 30 days)**, tell the user prices may have moved and **ask** whether to refresh it (via
+the mtg-scryfall-database skill) before continuing — proceed either way. `function:`/`otag:` (Tagger)
+tags aren't in bulk data, so those queries are routed to the live Scryfall API automatically.
+
 **Retrieval mechanics — use whatever is available, in this order of preference:**
 
 - **Code execution with network access** → run the bundled helper:
-  `python scripts/scryfall_search.py "<query>" --limit 30`. It handles pagination, rate limiting, color
-  identity, and prints each card's name, mana value, type, and EUR price as JSON or a table. This is the
-  fastest, most reliable path. Run `python scripts/scryfall_search.py --help` for options. The script also
-  fetches a single card's full details and price with `--named "Sol Ring"`.
+  `python scripts/scryfall_search.py "<query>" --limit 30`. It reads the local database (auto-building
+  it on first use), enforces color identity, and prints each card's name, mana value, type, and EUR
+  price (cheapest printing) as JSON or a table. This is the fastest, most reliable path. Run
+  `python scripts/scryfall_search.py --help` for options. The script also fetches a single card's full
+  details and price with `--named "Sol Ring"`. `function:` queries transparently use the live API.
 - **No code-execution network, but web tools available** → use `web_search` to surface the relevant
   Scryfall search page, EDHREC page, or mtgdecks list, then `web_fetch` the result. `web_fetch` only
   accepts URLs returned by a prior search, so search first (e.g. search `scryfall id<=WB function:ramp`),
-  then fetch the page that comes back.
+  then fetch the page that comes back. (No database can be built without code execution — that's fine,
+  this is the fallback.)
 - If neither has network to these domains, tell the user their environment needs network access to
   `api.scryfall.com`, `edhrec.com`, and `mtgdecks.net` (in Claude.ai/Code this may need enabling in
   settings, or an org owner may need to allow those domains), and offer to proceed from your own MTG
   knowledge with the caveat that prices and the latest cards won't be verified.
 
-Respect Scryfall's etiquette: small delay between calls (the script does this), and prefer one well-formed
-query over many redundant ones.
+Once the database exists, queries are local and fast; only `function:` tags and a stale-data refresh
+touch the network. If there's no clear working directory to write the database to, prompt the user for
+a path for `.mtg/` first (see "The `.mtg` workspace" above).
 
 ## Putting it together — the target shape of a 100-card deck
 

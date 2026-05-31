@@ -211,13 +211,22 @@ write the two files.
 - **mtggoldfish** (`https://www.mtggoldfish.com/metagame/standard`) — Standard metagame %s and full
   netdeck lists; good for BO3 and for sample mana bases.
 
+**Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
+SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
+**mtg-scryfall-database** skill) instead of the API. It's built **automatically on first use** (one-time
+~540 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
+tell the user and **ask** whether to refresh before continuing (for Arena this matters less — only rarity,
+Arena availability, and Standard legality are used, and those move only when a set releases). Any
+`function:`/`otag:` (Tagger) query routes to the live API automatically.
+
 **Retrieval mechanics (use what's available, in order):**
 - **Code execution with network** → run `python scripts/scryfall_search.py "<query>" --limit 30` to search
-  (Standard-legal + Arena by default, rarity shown), and
+  (reads the local DB, auto-builds on first use; Standard-legal + Arena by default, rarity shown), and
   `python scripts/scryfall_search.py --deck <import>.txt --tier <N>` to tally the wildcard cost of a
   finished list and check it against the tier caps. Run `--help` for options.
 - **No code-exec network, but web tools** → `web_search` for the Scryfall query / untapped.gg / mtggoldfish
-  page, then `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first).
+  page, then `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB
+  can be built here — that's the expected fallback.
 - **Neither** → tell the user the environment needs network to `api.scryfall.com`, `untapped.gg`, and
   `mtggoldfish.com`, and offer to proceed from known knowledge with the caveat that legality, rarity, and
   the current meta are unverified (important: Standard rotates and Arena availability varies, so flag this

@@ -45,11 +45,11 @@ library in `mtg-skills/lib/` (which the deckbuilding skills also use). Requires 
 network access to `api.scryfall.com`.
 
 ```
-python scripts/build_database.py            # build if missing; otherwise print status
-python scripts/build_database.py --status   # status + whether Scryfall has newer data
-python scripts/build_database.py --refresh  # force a rebuild from the latest bulk file
-python scripts/build_database.py --path P   # use an explicit database location (see no-FS case)
-python scripts/build_database.py --json     # machine-readable output
+python "${CLAUDE_SKILL_DIR}/scripts/build_database.py"            # build if missing; otherwise print status
+python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --status   # status + whether Scryfall has newer data
+python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --refresh  # force a rebuild from the latest bulk file
+python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --path P   # use an explicit database location (see no-FS case)
+python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --json     # machine-readable output
 ```
 
 ## When the deck skills run

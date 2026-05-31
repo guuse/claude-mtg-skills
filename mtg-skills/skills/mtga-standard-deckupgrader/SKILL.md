@@ -183,9 +183,9 @@ SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data �
 legality are used). `function:`/`otag:` (Tagger) queries route to the live API automatically.
 
 **Retrieval (use what's available, in order):**
-- **Code execution with network** → `python scripts/scryfall_search.py "<query>" --limit 30` to search
+- **Code execution with network** → `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" "<query>" --limit 30` to search
   (reads the local DB, auto-builds on first use; Standard-legal + Arena, rarity shown), and
-  `python scripts/scryfall_search.py --deck <arena>.txt --tier <N>` to tally a list's wildcard cost vs the
+  `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck <arena>.txt --tier <N>` to tally a list's wildcard cost vs the
   tier. The script counts every non-basic card from zero — when a collection is loaded, subtract owned
   copies from its totals yourself.
 - **No code-exec network, but web tools** → `web_search` then `web_fetch` (web_fetch only takes URLs from a
@@ -205,7 +205,7 @@ legality are used). `function:`/`otag:` (Tagger) queries route to the live API a
   cards remain.
 - **Colors — double-check castability:** every nonland card (especially anything you add) is castable in the
   deck's colors. Vet adds with color identity `id<=<colors>` (NOT `c:`, which also matches uncastable
-  multicolor cards), and run `python scripts/scryfall_search.py --deck arena.txt --colors <wubrg>` — it must
+  multicolor cards), and run `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck arena.txt --colors <wubrg>` — it must
   print `COLOR CHECK ✓` (catches e.g. a B/U or B/R card slipped into mono-black).
 - **Wildcard budget:** the **rares and mythics the user must craft** (owned copies excluded) are within the
   tier's caps, or the user okayed an overage; commons/uncommons reported as soft. Show the breakdown of the

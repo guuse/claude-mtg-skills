@@ -1,113 +1,54 @@
 #!/usr/bin/env python3
-"""
-scryfall_search.py — query the Scryfall API for Commander deckbuilding.
+"""scryfall_search.py — card search & pricing for Commander deckbuilding.
+
+Reads from the **local Scryfall database** (`.mtg/database/cards.sqlite`) instead of
+calling the Scryfall API for everything the bulk data supports. The database is built
+automatically on first use (one-time ~540 MB download); `function:`/`otag:` (Tagger)
+queries and any operator the local engine can't serve are routed to the live API
+automatically. See the mtg-scryfall-database skill and repo docs/adr/0001.
 
 Two modes:
   Search:  python scryfall_search.py "<query>" [--limit N] [--order edhrec] [--json]
   Named:   python scryfall_search.py --named "Sol Ring" [--json]
 
 Output (table by default) shows, for each card: name, mana value (mv), type, color
-identity, and Cardmarket price in EUR (Scryfall's prices.eur). Use --json for the
-full structured list to parse programmatically.
+identity, and Cardmarket price in EUR (cheapest printing). Use --json for the full list.
 
-Every search row shows CI (color identity) — ALWAYS check it matches your commander's color
-identity; a card outside it is illegal in the deck. Use `id<=<identity>` for this, NOT `c:`
-(`c:b` matches any card *containing* black, including multicolor cards you can't run).
+Every search row shows CI (color identity) — ALWAYS check it matches your commander's
+identity; use `id<=<identity>`, NOT `c:` (`c:b` matches off-identity multicolor cards).
 
 Scryfall query syntax (see references/scryfall-syntax.md):
-  id<=WB            color identity coverage (cards legal in a White/Black deck)
-  o:"sacrifice"     oracle text contains phrase
-  t:creature        type
-  mv<=3             mana value
-  function:ramp     curated function tag (ramp, removal, counterspell, board-wipe, card-advantage...)
-  is:gamechanger    on the official Game Changers list
-  order=edhrec      sort by popularity (passed via --order, default edhrec)
-
-Stdlib only — no pip install required. Respects Scryfall etiquette with a small
-delay between paginated requests and a descriptive User-Agent.
-
-If the network can't reach api.scryfall.com, the script prints a clear message;
-fall back to web_search + web_fetch of the Scryfall page, or proceed from known
-card knowledge with a caveat that prices/newest cards are unverified.
+  id<=WB  color identity coverage      o:"sacrifice"  oracle text
+  t:creature  type                     mv<=3  mana value
+  function:ramp  curated tag (live API)  is:gamechanger  Game Changers list
+  order=edhrec  popularity sort (default)
 """
 
 import argparse
 import json
+import os
 import sys
-import time
-import urllib.parse
-import urllib.request
-import urllib.error
 
-API = "https://api.scryfall.com"
-HEADERS = {
-    # Scryfall asks for a descriptive User-Agent and an explicit Accept header.
-    "User-Agent": "ClaudeCommanderDeckBuilder/1.0 (skill)",
-    "Accept": "application/json",
-}
-DELAY_SECONDS = 0.1  # be polite between paginated calls
+# Find the shared mtg_scryfall library. Plugin layout puts it at mtg-skills/lib
+# (../../../lib from here); the other candidates let a manually-copied skill find a
+# `lib/` (or `mtg_scryfall/`) dropped beside or just above it.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_LIB = None
+for _rel in ("../../../lib", "../../lib", "../lib", "lib", "."):
+    _cand = os.path.normpath(os.path.join(_HERE, _rel))
+    if os.path.isdir(os.path.join(_cand, "mtg_scryfall")):
+        _LIB = _cand
+        break
+if _LIB and _LIB not in sys.path:
+    sys.path.insert(0, _LIB)
 
-
-def _get(url):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def _oracle(card):
-    """Oracle text, joining faces for double-faced/split cards."""
-    if card.get("oracle_text"):
-        return card["oracle_text"]
-    faces = card.get("card_faces") or []
-    return " // ".join(f.get("oracle_text", "") for f in faces if f.get("oracle_text"))
-
-
-def _simplify(card):
-    return {
-        "name": card.get("name"),
-        "mv": card.get("cmc"),
-        "type_line": card.get("type_line"),
-        "color_identity": "".join(card.get("color_identity") or []) or "C",
-        "mana_cost": card.get("mana_cost")
-        or " // ".join(f.get("mana_cost", "") for f in (card.get("card_faces") or [])),
-        "eur": (card.get("prices") or {}).get("eur"),
-        "eur_foil": (card.get("prices") or {}).get("eur_foil"),
-        "oracle_text": _oracle(card),
-        "scryfall_uri": card.get("scryfall_uri"),
-    }
-
-
-def search(query, limit, order):
-    """Paginate Scryfall search results up to `limit` cards."""
-    results = []
-    params = {"q": query, "order": order, "unique": "cards"}
-    url = f"{API}/cards/search?" + urllib.parse.urlencode(params)
-    while url and len(results) < limit:
-        try:
-            data = _get(url)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:  # no cards matched
-                break
-            raise
-        for card in data.get("data", []):
-            results.append(_simplify(card))
-            if len(results) >= limit:
-                break
-        url = data.get("next_page") if data.get("has_more") else None
-        if url:
-            time.sleep(DELAY_SECONDS)
-    return results
-
-
-def named(name):
-    url = f"{API}/cards/named?" + urllib.parse.urlencode({"exact": name})
-    try:
-        return [_simplify(_get(url))]
-    except urllib.error.HTTPError as e:
-        if e.code == 404:  # try fuzzy
-            url = f"{API}/cards/named?" + urllib.parse.urlencode({"fuzzy": name})
-            return [_simplify(_get(url))]
-        raise
+try:
+    import mtg_scryfall
+    from mtg_scryfall import api
+except ImportError as e:  # pragma: no cover
+    print(f"ERROR: could not import the shared mtg_scryfall library from {_LIB}: {e}",
+          file=sys.stderr)
+    sys.exit(2)
 
 
 def print_table(cards):
@@ -141,10 +82,19 @@ def main():
     if not args.query and not args.named:
         ap.error("provide a search query or --named NAME")
 
+    # Build the local DB if missing (one-time), warn if stale; harmless if it then
+    # routes to the live API anyway.
+    mtg_scryfall.ensure_ready()
+
     try:
-        cards = named(args.named) if args.named else search(args.query, args.limit, args.order)
-    except urllib.error.URLError as e:
-        print(f"ERROR: could not reach api.scryfall.com ({e}).", file=sys.stderr)
+        if args.named:
+            card = mtg_scryfall.named(args.named)
+            cards = [card] if card else []
+        else:
+            cards = mtg_scryfall.search(args.query, limit=args.limit, order=args.order)
+    except api.ScryfallUnreachable as e:
+        print(f"ERROR: no local database and could not reach api.scryfall.com ({e}).",
+              file=sys.stderr)
         print("Fall back to web_search + web_fetch of the Scryfall page, or note that "
               "prices/newest cards are unverified.", file=sys.stderr)
         sys.exit(2)

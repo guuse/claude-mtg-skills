@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The skills are stdlib-only (sqlite3 + json), so test the range we claim to support.
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile the library and all skill scripts
+        run: |
+          python -m py_compile mtg-skills/lib/mtg_scryfall/*.py
+          python -m py_compile mtg-skills/skills/*/scripts/*.py
+
+      - name: Run offline smoke tests
+        # No pip install and no network: the suite builds a crafted mini-database and
+        # exercises the build/collapse logic and the Scryfall->SQL query translator.
+        run: python -m unittest discover -s tests -v

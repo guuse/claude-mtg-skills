@@ -15,6 +15,7 @@ The repo is set up as a **Claude Code plugin marketplace**, so installing is a t
 | **mtga-standard-deckbuilder** | Builds a **60-card Standard deck for MTG Arena**, centerpiece-first and tuned against the current ladder meta (untapped.gg / mtggoldfish). Verifies Standard legality, rarity, and Arena availability via Scryfall, and costs the deck in **Arena wildcards** against a budget tier (1–5) and your owned collection. Produces an **annotated decklist** (roles, rarity per card, mana curve, wildcard-cost breakdown, meta plan) and an **Arena import list** ready to paste in-client. Supports BO1 ladder and BO3 + sideboard. |
 | **mtg-commander-deckupgrader** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
 | **mtga-standard-deckupgrader** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
+| **mtg-scryfall-database** | Builds and refreshes the **local Scryfall card database** (`.mtg/database/cards.sqlite`) that the four deckbuilding skills read from instead of calling the Scryfall API on every query. Downloads Scryfall's "Default Cards" bulk file once, collapses it to one row per unique card (cheapest EUR/USD price, Arena availability, rarity, legalities, Game Changer flag, EDHREC rank), and stores it as SQLite — sharply cutting API calls and avoiding rate limits. You rarely run it directly: the deck skills **auto-build it on first use** and prompt you to refresh it when it's stale. |
 
 ## Install
 
@@ -46,12 +47,19 @@ Clone the repo and copy the skill folder into your skills directory. Use `~/.cla
 for a **personal** skill (available in every project) or `<your-project>/.claude/skills/` for a
 **project** skill (shared with your team via git).
 
+The deckbuilding skills share a small Python library (`mtg_scryfall`) that lives at
+`mtg-skills/lib/` in the plugin layout. When you copy a single skill out on its own, that layout
+is gone, so **also drop the library next to the skill's script** — the helper looks for a
+`mtg_scryfall` package beside it. (The plugin-marketplace install in Option A handles this for you.)
+
 **macOS / Linux:**
 
 ```bash
 git clone https://github.com/guuse/claude-mtg-skills.git
 mkdir -p ~/.claude/skills
 cp -r claude-mtg-skills/mtg-skills/skills/mtg-commander-deckbuilder ~/.claude/skills/
+# bundle the shared library next to the skill's script:
+cp -r claude-mtg-skills/mtg-skills/lib/mtg_scryfall ~/.claude/skills/mtg-commander-deckbuilder/scripts/
 ```
 
 **Windows (PowerShell):**
@@ -60,11 +68,13 @@ cp -r claude-mtg-skills/mtg-skills/skills/mtg-commander-deckbuilder ~/.claude/sk
 git clone https://github.com/guuse/claude-mtg-skills.git
 New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
 Copy-Item -Recurse "claude-mtg-skills\mtg-skills\skills\mtg-commander-deckbuilder" "$HOME\.claude\skills\"
+# bundle the shared library next to the skill's script:
+Copy-Item -Recurse "claude-mtg-skills\mtg-skills\lib\mtg_scryfall" "$HOME\.claude\skills\mtg-commander-deckbuilder\scripts\"
 ```
 
 Claude Code discovers the skill on the next session start. If you added it mid-session, run
 `/reload-plugins`. With this method the skill is invoked as `/mtg-commander-deckbuilder`
-(no plugin namespace).
+(no plugin namespace). The first build downloads card data into `.mtg/database/` (one-time).
 
 ## Usage
 
@@ -98,16 +108,23 @@ this repo's [`.gitignore`](.gitignore)):
 - **`.mtg/collection/`** — drop a collection export here (a Moxfield / Archidekt / MTGGoldfish CSV,
   or a plain `1 Card Name` list) and the builder will prefer cards you already own and flag what you
   still need to buy.
+- **`.mtg/database/`** — the **local Scryfall card database** (`cards.sqlite` + `meta.json`), built
+  automatically on first use (a one-time ~540 MB download that becomes a ~170 MB SQLite file). Skills
+  query this instead of the Scryfall API, so builds are fast and don't get rate-limited. It's refreshed
+  when you ask, and the skills offer to update it once it's more than 30 days old.
 
 ## Requirements
 
 - **Claude Code** (any recent version with plugin/skill support).
-- **Network access** to `api.scryfall.com`, `edhrec.com`, and `mtgdecks.net` for live card data
-  and pricing. If your environment blocks these, the skill says so and can fall back to Claude's
+- **Network access** to `api.scryfall.com`, `edhrec.com`, and `mtgdecks.net` for card data and
+  pricing. The first build downloads Scryfall's bulk card file (~540 MB) once into a local SQLite
+  database; after that, card lookups are local and only `function:` tag queries and refreshes hit the
+  network. If your environment blocks these domains, the skill says so and can fall back to Claude's
   own MTG knowledge (with a caveat that prices and the newest cards won't be verified).
-- **Python 3** for the bundled `scryfall_search.py` helper — **standard library only, no
-  `pip install` required**. (Optional: the skill also works via web search/fetch if code
-  execution isn't available.)
+- **Python 3** for the bundled helpers and the shared `mtg_scryfall` library — **standard library
+  only, no `pip install` required** (`sqlite3` and `json` ship with Python). Code execution is needed
+  to build the local database; without it, the skills fall back to live Scryfall via web search/fetch.
+- **Disk space** for the local card database (~170 MB) under `.mtg/database/`.
 
 ## Contributing
 

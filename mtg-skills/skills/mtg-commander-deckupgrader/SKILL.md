@@ -160,15 +160,27 @@ quality checks below, and write the two files.
 
 Same backbone as the deckbuilder — **EDHREC + mtgdecks.net** for proven inclusions, **Scryfall** to fill
 gaps, enforce color identity, filter by mana value, and **price** every card (`prices.eur` = Cardmarket
-EUR). Retrieval, in order of preference:
+EUR).
 
-- **Code execution with network** → `python scripts/scryfall_search.py "<query>" --limit 30` (handles
-  pagination, color identity, pricing; `--named "Sol Ring"` for one card). Fastest path.
+**Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
+SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
+**mtg-scryfall-database** skill) instead of the API. It's built **automatically on first use** (one-time
+~540 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
+tell the user prices may have moved and **ask** whether to refresh before continuing. `function:`/`otag:`
+(Tagger) tags route to the live API automatically. Retrieval, in order of preference:
+
+- **Code execution with network** → `python scripts/scryfall_search.py "<query>" --limit 30` (reads the
+  local DB, auto-builds on first use; color identity, cheapest-printing pricing; `--named "Sol Ring"` for
+  one card). Fastest path. `function:` queries use the live API transparently.
 - **No code-exec network, but web tools** → `web_search` for the Scryfall / EDHREC / mtgdecks page, then
-  `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first).
+  `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB can be
+  built here — that's the expected fallback.
 - **Neither** → tell the user the environment needs network to `api.scryfall.com`, `edhrec.com`, and
   `mtgdecks.net`, and offer to proceed from known MTG knowledge with the caveat that prices and the newest
   cards won't be verified.
+
+If there's no clear working directory to write the database to, prompt the user for a path for `.mtg/`
+first.
 
 ## Quality bar before you hand it over
 

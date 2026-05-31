@@ -1,44 +1,54 @@
 #!/usr/bin/env python3
-"""
-scryfall_search.py — Scryfall helper for building MTG Arena Standard decks.
+"""scryfall_search.py — card helper for building MTG Arena Standard decks.
+
+Reads from the **local Scryfall database** (`.mtg/database/cards.sqlite`) instead of
+calling the Scryfall API for everything the bulk data supports. The database is built
+automatically on first use (one-time ~540 MB download); `function:`/`otag:` (Tagger)
+queries and any operator the local engine can't serve route to the live API
+automatically. See the mtg-scryfall-database skill and repo docs/adr/0001.
 
 Modes:
   Search:  python scryfall_search.py "<query>" [--limit N] [--raw] [--json]
            Defaults to Standard-legal + Arena-available; shows rarity per card.
            Use --raw to send the query without auto-adding 'legal:standard game:arena'.
-
   Named:   python scryfall_search.py --named "Sheoldred, the Apocalypse" [--json]
-
   Deck:    python scryfall_search.py --deck <arena-import>.txt [--tier N] [--colors wubrg]
-           Parses an MTG Arena import list, looks up each card's rarity, tallies the
-           wildcard cost by rarity (basics are free), and checks it against the tier caps.
-           Reports the deck's color identity; with --colors it flags any card that is NOT
-           castable in those colors (e.g. --colors b catches a B/U or B/R card in mono-black).
+           Tallies wildcard cost by rarity (basics free) and checks the tier caps;
+           with --colors, flags any card NOT castable in those colors.
 
-Search and named output include a CI (color identity) column — ALWAYS sanity-check that every
-card's colors fit the deck. Note: `c:b` matches any card *containing* black (incl. multicolor);
-to find cards castable in a given color use color identity `id<=b`, not `c:b`.
+Output includes a CI (color identity) column — sanity-check every card fits the deck.
+Note: `c:b` matches any card *containing* black (incl. multicolor); use `id<=b`.
 
 Wildcard tier caps (common, uncommon, rare, mythic):
   1: 8/4/0/0   2: 12/6/2/1   3: 16/10/6/3   4: 20/14/12/6   5: unlimited
-
-Stdlib only — no pip install. If the network can't reach api.scryfall.com, the script
-says so; fall back to web_search + web_fetch of the Scryfall page, and note that
-legality/rarity/Arena-availability are unverified (Standard rotates, so flag this).
 """
 
 import argparse
 import json
+import os
 import re
 import sys
-import time
-import urllib.parse
-import urllib.request
-import urllib.error
 
-API = "https://api.scryfall.com"
-HEADERS = {"User-Agent": "ClaudeStandardDeckBuilder/1.0 (skill)", "Accept": "application/json"}
-DELAY = 0.1
+# Find the shared mtg_scryfall library. Plugin layout puts it at mtg-skills/lib
+# (../../../lib from here); the other candidates let a manually-copied skill find a
+# `lib/` (or `mtg_scryfall/`) dropped beside or just above it.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_LIB = None
+for _rel in ("../../../lib", "../../lib", "../lib", "lib", "."):
+    _cand = os.path.normpath(os.path.join(_HERE, _rel))
+    if os.path.isdir(os.path.join(_cand, "mtg_scryfall")):
+        _LIB = _cand
+        break
+if _LIB and _LIB not in sys.path:
+    sys.path.insert(0, _LIB)
+
+try:
+    import mtg_scryfall
+    from mtg_scryfall import api
+except ImportError as e:  # pragma: no cover
+    print(f"ERROR: could not import the shared mtg_scryfall library from {_LIB}: {e}",
+          file=sys.stderr)
+    sys.exit(2)
 
 TIER_CAPS = {
     1: (8, 4, 0, 0),
@@ -54,58 +64,10 @@ BASICS = {"plains", "island", "swamp", "mountain", "forest", "wastes",
           "snow-covered mountain", "snow-covered forest"}
 
 
-def _get(url):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def _oracle(card):
-    if card.get("oracle_text"):
-        return card["oracle_text"]
-    return " // ".join(f.get("oracle_text", "") for f in (card.get("card_faces") or []))
-
-
-def _simplify(card):
-    return {
-        "name": card.get("name"),
-        "mv": card.get("cmc"),
-        "type_line": card.get("type_line"),
-        "rarity": card.get("rarity"),
-        "color_identity": "".join(card.get("color_identity") or []) or "C",
-        "oracle_text": _oracle(card),
-    }
-
-
 def search(query, limit, raw):
     if not raw:
         query = f"{query} legal:standard game:arena"
-    results, url = [], f"{API}/cards/search?" + urllib.parse.urlencode(
-        {"q": query, "order": "edhrec", "unique": "cards"})
-    while url and len(results) < limit:
-        try:
-            data = _get(url)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                break
-            raise
-        for c in data.get("data", []):
-            results.append(_simplify(c))
-            if len(results) >= limit:
-                break
-        url = data.get("next_page") if data.get("has_more") else None
-        if url:
-            time.sleep(DELAY)
-    return results
-
-
-def named(name):
-    try:
-        return _simplify(_get(f"{API}/cards/named?" + urllib.parse.urlencode({"exact": name})))
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return _simplify(_get(f"{API}/cards/named?" + urllib.parse.urlencode({"fuzzy": name})))
-        raise
+    return mtg_scryfall.search(query, limit=limit, order="edhrec")
 
 
 def print_table(cards):
@@ -160,9 +122,8 @@ def cost_deck(path, tier, colors=None):
         if name.lower() in BASICS:
             basics += count
             continue
-        try:
-            card = named(name)
-        except urllib.error.HTTPError:
+        card = mtg_scryfall.named(name)
+        if not card:
             unknown.append(name); continue
         ci = (card.get("color_identity") or "").replace("C", "").upper()
         deck_colors |= set(ci)
@@ -233,25 +194,33 @@ def main():
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
+    if not (args.deck or args.named or args.query):
+        ap.error("provide a query, --named NAME, or --deck FILE")
+
+    # Build the local DB if missing (one-time), warn if stale.
+    mtg_scryfall.ensure_ready()
+
     try:
         if args.deck:
             cost_deck(args.deck, args.tier, args.colors)
             return
         if args.named:
-            card = named(args.named)
+            card = mtg_scryfall.named(args.named)
+            if not card:
+                print(f"Card not found: {args.named}", file=sys.stderr)
+                sys.exit(1)
             print(json.dumps(card, indent=2, ensure_ascii=False) if args.json else
                   f"{RARITY_LETTER.get(card['rarity'], '?')}  {card['name']}  ({card['rarity']})  "
                   f"MV{card['mv']:.0f}  [CI {card['color_identity']}]  {card['type_line']}")
             return
-        if not args.query:
-            ap.error("provide a query, --named NAME, or --deck FILE")
         cards = search(args.query, args.limit, args.raw)
         if args.json:
             print(json.dumps(cards, indent=2, ensure_ascii=False))
         else:
             print_table(cards)
-    except urllib.error.URLError as e:
-        print(f"ERROR: could not reach api.scryfall.com ({e}).", file=sys.stderr)
+    except api.ScryfallUnreachable as e:
+        print(f"ERROR: no local database and could not reach api.scryfall.com ({e}).",
+              file=sys.stderr)
         print("Fall back to web_search + web_fetch of the Scryfall page. Note that legality, rarity, "
               "and Arena availability are then unverified (Standard rotates — flag this to the user).",
               file=sys.stderr)

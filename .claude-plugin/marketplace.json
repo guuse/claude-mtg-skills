@@ -6,7 +6,7 @@
     {
       "name": "mtg-skills",
       "source": "./mtg-skills",
-      "description": "Magic: The Gathering deckbuilding skills for Claude Code — build and upgrade Commander/EDH and MTG Arena Standard decks, with more to come."
+      "description": "Magic: The Gathering deckbuilding skills for Claude Code — build and upgrade Commander/EDH and MTG Arena Standard decks, backed by a local Scryfall card database for fast, rate-limit-friendly card data. With more to come."
     }
   ]
 }

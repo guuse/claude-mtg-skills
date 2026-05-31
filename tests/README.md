@@ -33,3 +33,13 @@ temporary SQLite database and checks:
 CI runs the suite across Python **3.9, 3.12, 3.13** (see `.github/workflows/ci.yml`) — the
 latest two plus a 3.9 floor (macOS/older-distro system Python). The skills are stdlib-only,
 so there are no dependencies to install.
+
+On pull requests a separate `coverage` job measures line coverage of the shared library,
+posts it as a sticky PR comment, and **fails if coverage drops below 95%**
+(`coverage report --fail-under=95`). Run it locally with:
+
+```bash
+pip install coverage
+coverage run --source=mtg-skills/lib/mtg_scryfall -m unittest discover -s tests
+coverage report -m
+```

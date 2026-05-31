@@ -220,9 +220,9 @@ Arena availability, and Standard legality are used, and those move only when a s
 `function:`/`otag:` (Tagger) query routes to the live API automatically.
 
 **Retrieval mechanics (use what's available, in order):**
-- **Code execution with network** → run `python scripts/scryfall_search.py "<query>" --limit 30` to search
+- **Code execution with network** → run `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" "<query>" --limit 30` to search
   (reads the local DB, auto-builds on first use; Standard-legal + Arena by default, rarity shown), and
-  `python scripts/scryfall_search.py --deck <import>.txt --tier <N>` to tally the wildcard cost of a
+  `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck <import>.txt --tier <N>` to tally the wildcard cost of a
   finished list and check it against the tier caps. Run `--help` for options.
 - **No code-exec network, but web tools** → `web_search` for the Scryfall query / untapped.gg / mtggoldfish
   page, then `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB
@@ -244,7 +244,7 @@ the two files so nothing the user already has is mistakenly counted as a craft.
 - **Legality & Arena availability:** every non-basic card is `legal:standard` and on Arena. No banned cards.
 - **Colors — double-check castability:** every nonland card is castable in the deck's colors. Vet
   candidates with color identity `id<=<colors>` (NOT `c:`, which also matches multicolor cards you can't
-  cast), and run the audit `python scripts/scryfall_search.py --deck <file>.txt --colors <wubrg>` — it must
+  cast), and run the audit `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck <file>.txt --colors <wubrg>` — it must
   print `COLOR CHECK ✓` with zero off-color cards (this catches e.g. a B/U or B/R card slipped into mono-black).
 - **Wildcard budget:** **rare and mythic** totals are within the tier's caps (the hard gate) — or the
   user has okayed an overage. Count only the copies the user still needs to craft (owned copies from

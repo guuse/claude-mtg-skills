@@ -184,10 +184,10 @@ tags aren't in bulk data, so those queries are routed to the live Scryfall API a
 **Retrieval mechanics — use whatever is available, in this order of preference:**
 
 - **Code execution with network access** → run the bundled helper:
-  `python scripts/scryfall_search.py "<query>" --limit 30`. It reads the local database (auto-building
+  `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" "<query>" --limit 30`. It reads the local database (auto-building
   it on first use), enforces color identity, and prints each card's name, mana value, type, and EUR
   price (cheapest printing) as JSON or a table. This is the fastest, most reliable path. Run
-  `python scripts/scryfall_search.py --help` for options. The script also fetches a single card's full
+  `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --help` for options. The script also fetches a single card's full
   details and price with `--named "Sol Ring"`. `function:` queries transparently use the live API.
 - **No code-execution network, but web tools available** → use `web_search` to surface the relevant
   Scryfall search page, EDHREC page, or mtgdecks list, then `web_fetch` the result. `web_fetch` only

@@ -169,7 +169,7 @@ SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data �
 tell the user prices may have moved and **ask** whether to refresh before continuing. `function:`/`otag:`
 (Tagger) tags route to the live API automatically. Retrieval, in order of preference:
 
-- **Code execution with network** → `python scripts/scryfall_search.py "<query>" --limit 30` (reads the
+- **Code execution with network** → `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" "<query>" --limit 30` (reads the
   local DB, auto-builds on first use; color identity, cheapest-printing pricing; `--named "Sol Ring"` for
   one card). Fastest path. `function:` queries use the live API transparently.
 - **No code-exec network, but web tools** → `web_search` for the Scryfall / EDHREC / mtgdecks page, then

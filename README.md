@@ -122,9 +122,14 @@ annotated decklist and a ready-to-import list. You can also start a skill explic
 Builds are written into a **workspace** directory — by default a `.mtg/` folder in your current
 working directory (already covered by this repo's [`.gitignore`](.gitignore)). Set the **`MTG_HOME`**
 environment variable to put that workspace anywhere you like — point it at a private `mtg-data` git
-repo and your decks + collection follow you across your Mac, a Windows PC, and your phone. See
-**[SYNCING.md](SYNCING.md)** for the full cross-machine setup. Run any skill's
-`scripts/scryfall_search.py --paths` to see where the workspace currently resolves.
+repo and your decks + collection follow you across your Mac, a Windows PC, and your phone. Run any
+skill's `scripts/scryfall_search.py --paths` to see where the workspace currently resolves.
+
+**Sync across machines in one command.** Ask Claude to *"set up syncing for my decks"* (or run the
+**mtg-sync** skill's `scripts/sync.py --bootstrap`): it creates a private `mtg-data` repo, scaffolds it
+— including a `.claude/settings.json` that **auto-installs these skills** on any machine that opens it —
+migrates any decks/collection you already have, and pushes. Then set `MTG_HOME` to the printed path.
+See **[SYNCING.md](SYNCING.md)** for the full story (and the optional Moxfield mirror).
 
 The workspace holds three subfolders:
 

@@ -40,6 +40,25 @@ so there's no reason to sync it. Only your decks and collection travel.
 
 ## One-time setup
 
+### Quick start (recommended) — one command
+
+With the plugin installed (or this repo handy), the **mtg-sync** skill seeds the whole thing in one go:
+
+```bash
+python <mtg-sync>/scripts/sync.py --bootstrap
+```
+
+It creates a private `mtg-data` repo (via the `gh` CLI; clones it instead if it already exists),
+scaffolds the full layout — `decks/`, `collection/`, a `.gitignore` that excludes the rebuildable
+`database/`, a `README`, and the **`.claude/settings.json` that auto-installs the skills** — migrates
+any decks/collection from your current workspace, commits, and pushes. Useful flags:
+`--repo <name|owner/name|url>`, `--dest <path>`, `--public`, `--from <path>`, `--no-push`. It's
+**idempotent**, so run the same command on each machine. Then finish with steps **2** and **3** below
+(set `MTG_HOME`, build the database once). Or just ask Claude: *"set up syncing for my decks."*
+
+The steps below are the **manual equivalent** of what `--bootstrap` does — use them if you'd rather set
+things up by hand or don't have the `gh` CLI.
+
 ### 1. Create a free private data repo
 
 GitHub free accounts get **unlimited private repositories** — this costs nothing.

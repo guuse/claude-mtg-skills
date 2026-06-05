@@ -15,6 +15,10 @@ Modes:
   Deck:    python scryfall_search.py --deck <arena-import>.txt [--tier N] [--colors wubrg]
            Tallies wildcard cost by rarity (basics free) and checks the tier caps;
            with --colors, flags any card NOT castable in those colors.
+  Collect: python scryfall_search.py --collection [PATH]
+           Parse the user's owned-card export — .txt, .csv, or .json — into a normalized
+           "<count> Card Name" list. With no PATH, auto-finds it in the workspace's
+           collection/ folder. Use this to load the inventory before building.
 
 Output includes a CI (color identity) column — sanity-check every card fits the deck.
 Note: `c:b` matches any card *containing* black (incl. multicolor); use `id<=b`.
@@ -82,6 +86,30 @@ def cost_deck(path, tier, colors=None):
     render_wildcards(result)
 
 
+def show_collection(path, as_json=False):
+    """Load the owned-card collection (txt/csv/json) and print it normalized."""
+    try:
+        result = mtg_scryfall.load_collection(path or None)
+    except (ValueError, OSError) as e:
+        print(f"ERROR reading collection: {e}", file=sys.stderr)
+        sys.exit(1)
+    if result is None:
+        cdir = mtg_scryfall.workspace_paths()["paths"]["collection"]
+        print(f"No collection file found in {cdir}/ . Drop a .txt, .csv, or .json export "
+              "there (see the skill's collection section).", file=sys.stderr)
+        sys.exit(1)
+    if as_json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+    print(f"Collection: {result['total']} cards, {result['unique']} unique "
+          f"(from {os.path.basename(result['path'])}, parsed as {result['format']})")
+    if result["note"]:
+        print(f"NOTE: {result['note']}")
+    print("-" * 48)
+    for name, count in sorted(result["cards"].items()):
+        print(f"{count} {name}")
+
+
 def render_wildcards(result):
     """Render a tally_wildcards() result. Presentation only — the numbers are the lib's."""
     print(f"Deck size: main {result['main']}, sideboard {result['side']}, "
@@ -132,6 +160,9 @@ def main():
     ap.add_argument("--tier", type=int, choices=[1, 2, 3, 4, 5], help="Tier to check --deck against.")
     ap.add_argument("--colors", help="With --deck: WUBRG letters of the deck's intended colors; flags any "
                     "card not castable in that color identity (e.g. --colors b for mono-black).")
+    ap.add_argument("--collection", nargs="?", const="", metavar="PATH",
+                    help="Parse the owned-card export (.txt/.csv/.json) into a normalized list. "
+                         "Bare flag auto-finds it in the workspace's collection/ folder.")
     ap.add_argument("--limit", type=int, default=30)
     ap.add_argument("--raw", action="store_true", help="Don't auto-add Standard/Arena filters.")
     ap.add_argument("--json", action="store_true")
@@ -144,8 +175,13 @@ def main():
         print(json.dumps(mtg_scryfall.workspace_paths(), indent=2))
         return
 
+    # Collection parsing is pure file I/O — no database needed, so handle it before ensure_ready.
+    if args.collection is not None:
+        show_collection(args.collection, args.json)
+        return
+
     if not (args.deck or args.named or args.query):
-        ap.error("provide a query, --named NAME, or --deck FILE")
+        ap.error("provide a query, --named NAME, --deck FILE, or --collection [PATH]")
 
     # Build the local DB if missing (one-time), warn if stale.
     mtg_scryfall.ensure_ready()

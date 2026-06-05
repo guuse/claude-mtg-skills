@@ -64,15 +64,25 @@ it and ask** whether to address it rather than silently changing it.
 ## Load the user's Arena collection
 
 As with the builder, get the user's collection so upgrades favor cards they can play **today** and only
-cost wildcards where it matters. The collection lives at **`.mtg/collection/mtga_collection.txt`** (a plain
-`<count> <Card Name>` export):
+cost wildcards where it matters. The export lives in **`.mtg/collection/`** and can be **`.txt`** (a plain
+`<count> Card Name` list), **`.csv`** (name/quantity columns), or **`.json`** (`{name, quantity}` objects
+or a `{name: count}` map). **Don't hand-parse it** — run the bundled helper, which finds the file in any of
+those formats and normalises it to a clean `<count> Card Name` list:
 
-- **No collection file present** → ask the user to export to `.mtg/collection/mtga_collection.txt`, and
-  recommend the free exporter **https://github.com/NthPhantom10/MTGA-collection-exporter**. Make clear it's
-  strongly recommended — with it, any upgrade card they already own costs **0 wildcards**, which often means
-  the best upgrade is free. If they decline, proceed and cost added cards from zero.
-- **Collection file present** → ask whether it's **up to date** and whether to **use it**; offer a
-  re-export with the same tool if stale. Once confirmed, read it fully.
+```bash
+python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --collection
+```
+
+(Add an explicit path — `--collection <file>` — if it lives elsewhere.) Then:
+
+- **No file found** → ask the user to drop an export into `.mtg/collection/` (any of `.txt`/`.csv`/`.json`),
+  and recommend the free exporter **https://github.com/NthPhantom10/MTGA-collection-exporter**. Make clear
+  it's strongly recommended — with it, any upgrade card they already own costs **0 wildcards**, which often
+  means the best upgrade is free. If they decline, proceed and cost added cards from zero.
+- **A collection is found** → the helper prints the total and the format it parsed (relay any `NOTE:` it
+  emits — e.g. an Arena-ID-only JSON it can't resolve — and ask for a name-based export). Ask whether it's
+  **up to date** and whether to **use it**; offer a re-export if stale. Once confirmed, use the normalised
+  list as the inventory.
 
 When a collection is in use, treat it as the inventory: prefer owned upgrades, and count wildcard cost only
 for the cards the user doesn't already own.
@@ -133,25 +143,31 @@ The subdirectories:
 
 - **`.mtg/decks/`** — where upgraded decks are written. **Each deck gets its own subfolder**,
   `.mtg/decks/<deck-slug>/`, holding `deck.md` and `arena.txt`. Same decks folder the other skills use.
-- **`.mtg/collection/mtga_collection.txt`** — the user's Arena collection (owned cards), the inventory that
-  makes owned upgrades free. See "Load the user's Arena collection" above.
+- **`.mtg/collection/`** — the user's Arena collection (owned cards) as a `.txt`, `.csv`, or `.json`
+  export, the inventory that makes owned upgrades free. Loaded via the bundled `--collection` helper (it
+  accepts any of those formats). See "Load the user's Arena collection" above.
 
 (The pasted decklist is taken from the prompt, not a file.)
 
 ### Keeping decks in sync across machines (mtg-sync)
 
-If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
-use the **mtg-sync** skill at the edges of this upgrade — **pull before, push after** — the same way
-card data comes from mtg-db:
+Decks live in the user's `mtg-data` git repo, and the user wants **every upgrade to pull at the start
+and push at the end** — the same way card data comes from mtg-db. **Don't try to judge whether
+syncing is set up before acting — always run the sync commands and let the helper tell you.**
+`sync.py` returns `skipped` when the workspace isn't a git repo, so an unconditional call is safe
+everywhere; guessing whether to run it is exactly what makes pushing flaky.
 
 - **At the start**, before loading the collection or writing anything, invoke **mtg-sync** to pull
   (`--pull`), bringing down any decks built on another machine first.
-- **After saving the upgraded deck's files**, invoke **mtg-sync** to push
-  (`--push -m "<archetype>"`), so the deck is available everywhere.
+- **As the final action of the upgrade** (see **Final step — always commit & push** at the end of
+  this skill), invoke **mtg-sync** to push (`--push -m "<archetype>"`), so the upgraded deck lands on
+  the repo's main branch and is available everywhere. This push runs **every time**, not only when you
+  think sync is configured.
 
-**Best-effort — never block the upgrade.** If sync reports `skipped` (syncing isn't set up) or
-`FAILED` (e.g. offline), note it in one line and continue; the deck is saved locally and can be
-pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
+**Only the *result* is best-effort.** If the push reports `skipped` (syncing isn't set up) or
+`FAILED` (e.g. offline), note it in one line and continue — the deck is saved locally and can be
+pushed later. Never skip the *attempt*. To set syncing up the first time, use the **mtg-sync** skill
+(`--bootstrap`).
 
 ## The method (diagnose, then upgrade)
 
@@ -237,3 +253,22 @@ legality are used). `function:`/`otag:` (Tagger) queries route to the live API a
   *changes*.
 - **Real improvement:** the swaps fix the Step 1 problems and improve the worst matchups, the mana base
   matches the deck's speed, and each change has a clear reason. Only then present the files.
+
+## Final step — always commit & push (every upgrade ends here)
+
+This is the step that gets missed, so treat it as part of the deliverable, not an afterthought.
+**After the two files are written and presented, the last thing you do — every single time — is push
+them** by invoking the **mtg-sync** skill: `--push -m "<archetype>"`.
+
+Run it **unconditionally**. Do *not* first reason about whether the workspace is a synced repo — just
+run it. The helper handles every case and reports back:
+
+- **`ok` (committed + pushed)** → confirm in one line that the deck was pushed to the `mtg-data` repo's
+  main branch.
+- **`skipped`** → the workspace isn't a synced git repo; say so in one line and stop (offer
+  `--bootstrap` via mtg-sync if they'd like syncing set up).
+- **`FAILED`** → e.g. offline or an auth issue; say so in one line — the deck is committed/saved
+  locally and can be pushed later.
+
+Only the *handling of that result* is best-effort. The **attempt is mandatory** — never end an upgrade
+without running the push.

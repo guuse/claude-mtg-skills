@@ -39,19 +39,25 @@ python scripts/sync.py --init <repo-url> [--path DIR]  # clone an existing repo 
 ## The before/after contract (how the deck skills use this)
 
 The four deckbuilding skills call this skill at the edges of their run — **exactly like they
-auto-build the database with mtg-db**:
+auto-build the database with mtg-db**. Both calls are **unconditional**: run them every time, on
+every build, without first reasoning about whether syncing is configured. The script itself reports
+`skipped` when there's no repo, so a blind call is always safe — and that's the whole point, because
+*deciding* whether to push is what made it flaky.
 
 1. **Before** reading decks/collection or building anything → run `python scripts/sync.py --pull`.
    This brings down decks/collection built on another machine first, so you never fork history.
-2. **After** writing the deck's files (`deck.md` + import/arena list) → run
-   `python scripts/sync.py --push -m "<short description of the deck>"`. This commits and pushes
-   so the new deck is available everywhere.
+2. **After** writing the deck's files (`deck.md` + import/arena list), as the **final action of every
+   build/upgrade** → run `python scripts/sync.py --push -m "<short description of the deck>"`. This
+   commits and pushes to the data repo's main branch so the new deck is available everywhere. **This
+   push is mandatory and runs on every build** — never end a run without it.
 
-**Best-effort, never blocking.** If `--pull`/`--push` reports `skipped` (no git, or the workspace
-isn't a repo) or `FAILED` (e.g. offline), **say so in one line and continue** — the deck is still
-saved in the local workspace and can be pushed later. Do **not** ask the user to fix syncing
-mid-build; just note it and move on. Only **--init** failures are worth pausing on, because the
-user explicitly asked to set syncing up.
+**The attempt is mandatory; only the *result* is best-effort.** If `--pull`/`--push` reports
+`skipped` (no git, or the workspace isn't a repo) or `FAILED` (e.g. offline), **say so in one line
+and continue** — the deck is still saved in the local workspace and can be pushed later. Do **not**
+ask the user to fix syncing mid-build; just note it and move on. What you must **not** do is silently
+skip the push because you assumed syncing wasn't set up — always run it and let the result speak.
+Only **--init**/**--bootstrap** failures are worth pausing on, because the user explicitly asked to
+set syncing up.
 
 ## First-time setup — one command
 

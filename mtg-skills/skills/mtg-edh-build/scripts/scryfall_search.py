@@ -5,7 +5,7 @@ Reads from the **local Scryfall database** (`.mtg/database/cards.sqlite`) instea
 calling the Scryfall API for everything the bulk data supports. The database is built
 automatically on first use (one-time ~540 MB download); `function:`/`otag:` (Tagger)
 queries and any operator the local engine can't serve are routed to the live API
-automatically. See the mtg-scryfall-database skill and repo docs/adr/0001.
+automatically. See the mtg-db skill and repo docs/adr/0001.
 
 Two modes:
   Search:  python scryfall_search.py "<query>" [--limit N] [--order edhrec] [--json]

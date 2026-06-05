@@ -1,5 +1,5 @@
 ---
-name: mtg-commander-deckupgrader
+name: mtg-edh-upgrade
 description: >-
   Improve an existing 100-card Magic the Gathering Commander (EDH) deck that the user pastes in. Use this
   skill whenever the user already has a Commander/EDH decklist and wants to upgrade, tune, optimize, fix, or
@@ -164,7 +164,7 @@ EUR).
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
-**mtg-scryfall-database** skill) instead of the API. It's built **automatically on first use** (one-time
+**mtg-db** skill) instead of the API. It's built **automatically on first use** (one-time
 ~540 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
 tell the user prices may have moved and **ask** whether to refresh before continuing. `function:`/`otag:`
 (Tagger) tags route to the live API automatically. Retrieval, in order of preference:

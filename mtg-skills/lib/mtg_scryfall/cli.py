@@ -47,6 +47,6 @@ def ensure_ready(db_path=None, stream=sys.stderr, build_if_missing=True):
         age = final.get("age_days")
         age_s = "of unknown age" if age is None else f"{age:.0f} days old"
         print(f"Note: local card data is {age_s} (older than {STALE_AFTER_DAYS} days). "
-              "Prices/sets may have moved — refresh with the mtg-scryfall-database skill "
+              "Prices/sets may have moved — refresh with the mtg-db skill "
               "if you need current data.", file=stream, flush=True)
     return res

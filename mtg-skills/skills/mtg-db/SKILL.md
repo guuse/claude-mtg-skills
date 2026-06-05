@@ -1,5 +1,5 @@
 ---
-name: mtg-scryfall-database
+name: mtg-db
 description: >-
   Build or refresh the local Scryfall card database (.mtg/database/cards.sqlite) that the
   MTG deckbuilding skills read from instead of calling the Scryfall API. Use this skill when

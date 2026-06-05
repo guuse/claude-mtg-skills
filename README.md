@@ -30,11 +30,11 @@ The repo is set up as a **Claude Code plugin marketplace**, so installing is a t
 
 | Skill | What it does |
 |-------|--------------|
-| **mtg-commander-deckbuilder** | Builds a complete, balanced **100-card Commander (EDH) deck** around any commander you name. Pulls proven cards from EDHREC and mtgdecks.net, fills gaps and prices everything via Scryfall (Cardmarket EUR), and applies a disciplined 7-step methodology — correct ramp, card advantage, interaction, land count, curve, and real win conditions. Produces an **annotated decklist** (grouped by role, per-card reasons + prices, total cost) and a **plain importable list** (`1 Card Name`, ready to paste into Moxfield / Archidekt / mtggoldfish). Bracket- and budget-aware. |
-| **mtga-standard-deckbuilder** | Builds a **60-card Standard deck for MTG Arena**, centerpiece-first and tuned against the current ladder meta (untapped.gg / mtggoldfish). Verifies Standard legality, rarity, and Arena availability via Scryfall, and costs the deck in **Arena wildcards** against a budget tier (1–5) and your owned collection. Produces an **annotated decklist** (roles, rarity per card, mana curve, wildcard-cost breakdown, meta plan) and an **Arena import list** ready to paste in-client. Supports BO1 ladder and BO3 + sideboard. |
-| **mtg-commander-deckupgrader** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
-| **mtga-standard-deckupgrader** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
-| **mtg-scryfall-database** | Builds and refreshes the **local Scryfall card database** (`.mtg/database/cards.sqlite`) that the four deckbuilding skills read from instead of calling the Scryfall API on every query. Downloads Scryfall's "Default Cards" bulk file once, collapses it to one row per unique card (cheapest EUR/USD price, Arena availability, rarity, legalities, Game Changer flag, EDHREC rank), and stores it as SQLite — sharply cutting API calls and avoiding rate limits. You rarely run it directly: the deck skills **auto-build it on first use** and prompt you to refresh it when it's stale. |
+| **mtg-edh-build** | Builds a complete, balanced **100-card Commander (EDH) deck** around any commander you name. Pulls proven cards from EDHREC and mtgdecks.net, fills gaps and prices everything via Scryfall (Cardmarket EUR), and applies a disciplined 7-step methodology — correct ramp, card advantage, interaction, land count, curve, and real win conditions. Produces an **annotated decklist** (grouped by role, per-card reasons + prices, total cost) and a **plain importable list** (`1 Card Name`, ready to paste into Moxfield / Archidekt / mtggoldfish). Bracket- and budget-aware. |
+| **mtg-std-build** | Builds a **60-card Standard deck for MTG Arena**, centerpiece-first and tuned against the current ladder meta (untapped.gg / mtggoldfish). Verifies Standard legality, rarity, and Arena availability via Scryfall, and costs the deck in **Arena wildcards** against a budget tier (1–5) and your owned collection. Produces an **annotated decklist** (roles, rarity per card, mana curve, wildcard-cost breakdown, meta plan) and an **Arena import list** ready to paste in-client. Supports BO1 ladder and BO3 + sideboard. |
+| **mtg-edh-upgrade** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
+| **mtg-std-upgrade** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
+| **mtg-db** | Builds and refreshes the **local Scryfall card database** (`.mtg/database/cards.sqlite`) that the four deckbuilding skills read from instead of calling the Scryfall API on every query. Downloads Scryfall's "Default Cards" bulk file once, collapses it to one row per unique card (cheapest EUR/USD price, Arena availability, rarity, legalities, Game Changer flag, EDHREC rank), and stores it as SQLite — sharply cutting API calls and avoiding rate limits. You rarely run it directly: the deck skills **auto-build it on first use** and prompt you to refresh it when it's stale. |
 
 ## Install
 
@@ -51,7 +51,7 @@ That's it. Verify with `/plugin` → **Installed** tab, where you'll see `mtg-sk
 auto-triggers when you ask for a Commander deck, or you can invoke it explicitly:
 
 ```text
-/mtg-skills:mtg-commander-deckbuilder
+/mtg-skills:mtg-edh-build
 ```
 
 To pull future updates:
@@ -76,9 +76,9 @@ is gone, so **also drop the library next to the skill's script** — the helper 
 ```bash
 git clone https://github.com/guuse/claude-mtg-skills.git
 mkdir -p ~/.claude/skills
-cp -r claude-mtg-skills/mtg-skills/skills/mtg-commander-deckbuilder ~/.claude/skills/
+cp -r claude-mtg-skills/mtg-skills/skills/mtg-edh-build ~/.claude/skills/
 # bundle the shared library next to the skill's script:
-cp -r claude-mtg-skills/mtg-skills/lib/mtg_scryfall ~/.claude/skills/mtg-commander-deckbuilder/scripts/
+cp -r claude-mtg-skills/mtg-skills/lib/mtg_scryfall ~/.claude/skills/mtg-edh-build/scripts/
 ```
 
 **Windows (PowerShell):**
@@ -86,13 +86,13 @@ cp -r claude-mtg-skills/mtg-skills/lib/mtg_scryfall ~/.claude/skills/mtg-command
 ```powershell
 git clone https://github.com/guuse/claude-mtg-skills.git
 New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-Copy-Item -Recurse "claude-mtg-skills\mtg-skills\skills\mtg-commander-deckbuilder" "$HOME\.claude\skills\"
+Copy-Item -Recurse "claude-mtg-skills\mtg-skills\skills\mtg-edh-build" "$HOME\.claude\skills\"
 # bundle the shared library next to the skill's script:
-Copy-Item -Recurse "claude-mtg-skills\mtg-skills\lib\mtg_scryfall" "$HOME\.claude\skills\mtg-commander-deckbuilder\scripts\"
+Copy-Item -Recurse "claude-mtg-skills\mtg-skills\lib\mtg_scryfall" "$HOME\.claude\skills\mtg-edh-build\scripts\"
 ```
 
 Claude Code discovers the skill on the next session start. If you added it mid-session, run
-`/reload-plugins`. With this method the skill is invoked as `/mtg-commander-deckbuilder`
+`/reload-plugins`. With this method the skill is invoked as `/mtg-edh-build`
 (no plugin namespace). The first build downloads card data into `.mtg/database/` (one-time).
 
 ## Usage
@@ -113,8 +113,8 @@ Claude confirms the few parameters it needs — power bracket and budget for Com
 centerpiece/collection, wildcard tier, and BO1/BO3 for Arena Standard (upgrades just ask for a
 budget, usually a small one) — then works through the methodology and hands back two files: an
 annotated decklist and a ready-to-import list. You can also start a skill explicitly, e.g.
-`/mtg-skills:mtg-commander-deckbuilder`, `/mtg-skills:mtga-standard-deckbuilder`,
-`/mtg-skills:mtg-commander-deckupgrader`, or `/mtg-skills:mtga-standard-deckupgrader`.
+`/mtg-skills:mtg-edh-build`, `/mtg-skills:mtg-std-build`,
+`/mtg-skills:mtg-edh-upgrade`, or `/mtg-skills:mtg-std-upgrade`.
 
 ### Output & your collection
 

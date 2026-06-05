@@ -1,5 +1,5 @@
 ---
-name: mtg-commander-deckbuilder
+name: mtg-edh-build
 description: >-
   Build a complete, balanced 100-card Magic the Gathering Commander (EDH) deck around a chosen commander.
   Use this skill whenever the user wants to build, brew, design, or upgrade a Commander/EDH deck, names a
@@ -184,11 +184,11 @@ and price everything**. Concretely:
 
 **Scryfall reads come from the local card database.** The bundled `scripts/scryfall_search.py`
 queries a **local SQLite database** (`.mtg/database/cards.sqlite`) built from Scryfall's bulk data
-instead of hammering the API — see the **mtg-scryfall-database** skill. The database is built
+instead of hammering the API — see the **mtg-db** skill. The database is built
 **automatically on first use** (a one-time ~540 MB download), so you don't need to run anything
 first; just call the script. At the **start of a build**, if the script reports the data is **stale
 (older than 30 days)**, tell the user prices may have moved and **ask** whether to refresh it (via
-the mtg-scryfall-database skill) before continuing — proceed either way. `function:`/`otag:` (Tagger)
+the mtg-db skill) before continuing — proceed either way. `function:`/`otag:` (Tagger)
 tags aren't in bulk data, so those queries are routed to the live Scryfall API automatically.
 
 **Retrieval mechanics — use whatever is available, in this order of preference:**

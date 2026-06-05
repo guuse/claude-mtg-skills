@@ -1,5 +1,5 @@
 ---
-name: mtga-standard-deckbuilder
+name: mtg-std-build
 description: >-
   Build a 60-card Standard-format deck for MTG Arena (MTGA), centerpiece-first, tuned against the current
   ladder meta, and costed in Arena wildcards by rarity. Use whenever the user wants to build, brew, or
@@ -223,7 +223,7 @@ write the two files.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
-**mtg-scryfall-database** skill) instead of the API. It's built **automatically on first use** (one-time
+**mtg-db** skill) instead of the API. It's built **automatically on first use** (one-time
 ~540 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
 tell the user and **ask** whether to refresh before continuing (for Arena this matters less — only rarity,
 Arena availability, and Standard legality are used, and those move only when a set releases). Any

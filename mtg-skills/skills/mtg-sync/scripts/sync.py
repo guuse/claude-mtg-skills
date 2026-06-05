@@ -56,7 +56,7 @@ def _print_status(as_json):
         return 0
     if not st["is_repo"]:
         print("repo      : workspace is NOT a git repo.")
-        print("            → run:  python sync.py --init <your-private-repo-url>")
+        print("            → first-time setup:  python sync.py --bootstrap")
         print("            (or set $MTG_HOME to an already-cloned data repo; see SYNCING.md)")
         return 0
     print(f"remote    : {st['remote'] or '(none)'}")

@@ -89,9 +89,10 @@ for the cards the user doesn't already own.
 
 ## The deliverable
 
-Always produce **two files**, saved in their own folder under `.mtg/decks/` in the user's current working
-directory: `.mtg/decks/<deck-slug>/deck.md` and `.mtg/decks/<deck-slug>/arena.txt` (create the folder if
+Always produce **two files**, saved in their own folder under `.mtg/decks/std/` in the user's current working
+directory: `.mtg/decks/std/<deck-slug>/deck.md` and `.mtg/decks/std/<deck-slug>/arena.txt` (create the folder if
 missing; slug = a short kebab-case deck name, with a suffix like `-upgraded` if a folder already exists).
+(MTG Arena Standard decks live under `decks/std/`; Commander/EDH decks live under `decks/edh/`.)
 See "The `.mtg` workspace" below.
 
 1. **An annotated, upgraded decklist** (`deck.md`) — the full improved 60 (+ sideboard for BO3), cards
@@ -133,8 +134,10 @@ they set `$MTG_HOME`) before reading or writing anything, and use that location 
 
 The subdirectories:
 
-- **`.mtg/decks/`** — where upgraded decks are written. **Each deck gets its own subfolder**,
-  `.mtg/decks/<deck-slug>/`, holding `deck.md` and `arena.txt`. Same decks folder the other skills use.
+- **`.mtg/decks/`** — where upgraded decks are written, **split by format**: MTG Arena Standard under
+  `.mtg/decks/std/` and Commander/EDH under `.mtg/decks/edh/`. **Each deck gets its own subfolder** —
+  for this skill, `.mtg/decks/std/<deck-slug>/`, holding `deck.md` and `arena.txt`. Same decks folder
+  the other skills use.
 - **`.mtg/collection/mtga_collection.txt`** — the user's Arena collection (owned cards), the inventory that
   makes owned upgrades free. See "Load the user's Arena collection" above.
 

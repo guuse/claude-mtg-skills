@@ -91,10 +91,11 @@ def _readme():
         "**auto-installs** from the marketplace on session start (see `.claude/settings.json`), so a "
         "fresh clone is ready to build and tune decks with no manual setup.\n\n"
         "```\n"
-        "decks/<slug>/   built decks (deck.md + import.txt / arena.txt)    synced\n"
-        "collection/     collection exports (Archidekt / Arena / Moxfield) synced\n"
-        "database/       cards.sqlite — Scryfall cache; rebuilt per machine, optionally\n"
-        "                synced via Git LFS (sync.py --push-database / --pull-database)\n"
+        "decks/edh/<slug>/  built Commander decks (deck.md + import.txt)      synced\n"
+        "decks/std/<slug>/  built Arena Standard decks (deck.md + arena.txt)  synced\n"
+        "collection/        collection exports (Archidekt / Arena / Moxfield) synced\n"
+        "database/          cards.sqlite — Scryfall cache; rebuilt per machine, optionally\n"
+        "                   synced via Git LFS (sync.py --push-database / --pull-database)\n"
         "```\n\n"
         "```bash\n"
         'export MTG_HOME="$(pwd)"   # macOS/Linux;  Windows:  setx MTG_HOME "%CD%"\n'
@@ -378,11 +379,11 @@ def _scaffold(home):
     """Make `home` a complete, auto-install-ready data workspace. Non-destructive:
     creates only what's missing, never clobbers existing files.
 
-    Ensures decks/ + collection/ (with .keep), a .gitignore that excludes the build
-    artifacts under database/, a .gitattributes that tracks the card database via Git LFS,
-    a README, and .claude/settings.json (which wires up plugin auto-install).
+    Ensures decks/std + decks/edh + collection/ (with .keep), a .gitignore that excludes
+    the build artifacts under database/, a .gitattributes that tracks the card database via
+    Git LFS, a README, and .claude/settings.json (which wires up plugin auto-install).
     """
-    for sub in ("decks", "collection"):
+    for sub in (os.path.join("decks", "std"), os.path.join("decks", "edh"), "collection"):
         os.makedirs(os.path.join(home, sub), exist_ok=True)
         keep = os.path.join(home, sub, ".keep")
         if not os.path.exists(keep):

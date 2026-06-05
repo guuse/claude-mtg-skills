@@ -2,7 +2,8 @@
 
 All skill file I/O lives under one workspace directory that holds three siblings:
 `database/` (the built `cards.sqlite` + `meta.json`), `decks/` (built decks), and
-`collection/` (the user's owned-card exports).
+`collection/` (the user's owned-card exports). Decks are split by format into
+`decks/std/<slug>/` (MTG Arena Standard) and `decks/edh/<slug>/` (Commander/EDH).
 
 How the workspace is resolved, in order:
 
@@ -69,9 +70,17 @@ def database_dir(mtg_dir=None, start=None):
     return os.path.join(_workspace(mtg_dir, start), "database")
 
 
-def decks_dir(mtg_dir=None, start=None):
-    """Return `<workspace>/decks`, creating nothing."""
-    return os.path.join(_workspace(mtg_dir, start), "decks")
+def decks_dir(mtg_dir=None, start=None, fmt=None):
+    """Return the decks directory, optionally for a specific format.
+
+    `fmt` is `"std"` or `"edh"` to get the per-format subfolder
+    (`<workspace>/decks/std` or `<workspace>/decks/edh`); omit it for the `decks/` root.
+    Creates nothing.
+    """
+    base = os.path.join(_workspace(mtg_dir, start), "decks")
+    if fmt:
+        return os.path.join(base, fmt)
+    return base
 
 
 def collection_dir(mtg_dir=None, start=None):
@@ -119,6 +128,8 @@ def workspace_paths(start=None):
         "home": root,
         "database": os.path.join(root, "database"),
         "decks": os.path.join(root, "decks"),
+        "decks_std": os.path.join(root, "decks", "std"),
+        "decks_edh": os.path.join(root, "decks", "edh"),
         "collection": os.path.join(root, "collection"),
         "db_file": db,
     }

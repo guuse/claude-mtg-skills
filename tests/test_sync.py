@@ -403,7 +403,8 @@ class InitAndScaffoldTests(unittest.TestCase):
             res = sync.init("git@github.com:me/mtg-data.git", dest)
         self.assertTrue(res["ok"])
         self.assertTrue(res["cloned"])
-        self.assertTrue(os.path.exists(os.path.join(dest, "decks", ".keep")))
+        self.assertTrue(os.path.exists(os.path.join(dest, "decks", "std", ".keep")))
+        self.assertTrue(os.path.exists(os.path.join(dest, "decks", "edh", ".keep")))
         self.assertTrue(os.path.exists(os.path.join(dest, "collection", ".keep")))
         with open(os.path.join(dest, ".gitignore")) as fh:
             self.assertIn("database/", fh.read())
@@ -498,7 +499,8 @@ class ScaffoldExtrasTests(unittest.TestCase):
     def test_scaffold_writes_readme_and_settings(self):
         home = tempfile.mkdtemp()
         sync._scaffold(home)
-        self.assertTrue(os.path.exists(os.path.join(home, "decks", ".keep")))
+        self.assertTrue(os.path.exists(os.path.join(home, "decks", "std", ".keep")))
+        self.assertTrue(os.path.exists(os.path.join(home, "decks", "edh", ".keep")))
         self.assertTrue(os.path.exists(os.path.join(home, "README.md")))
         sj = os.path.join(home, ".claude", "settings.json")
         self.assertTrue(os.path.exists(sj))

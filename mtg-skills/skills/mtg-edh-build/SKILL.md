@@ -43,10 +43,11 @@ Always produce **two files** at the end (the user expects both):
    paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
 Use the `present_files` tool to share both, and **save them in their own folder under
-`.mtg/decks/`** in the user's current working directory: `.mtg/decks/<deck-slug>/deck.md` and
-`.mtg/decks/<deck-slug>/import.txt`. Create the folder if it doesn't exist. The slug is the
+`.mtg/decks/edh/`** in the user's current working directory: `.mtg/decks/edh/<deck-slug>/deck.md` and
+`.mtg/decks/edh/<deck-slug>/import.txt`. Create the folder if it doesn't exist. (Commander/EDH decks
+live under `decks/edh/`; MTG Arena Standard decks live under `decks/std/`.) The slug is the
 commander name (lowercase, spaces→hyphens, punctuation dropped), e.g.
-`.mtg/decks/atraxa-praetors-voice/`. If the user already has a folder for that commander and wants a
+`.mtg/decks/edh/atraxa-praetors-voice/`. If the user already has a folder for that commander and wants a
 different build, add a short distinguishing suffix (e.g. `atraxa-praetors-voice-superfriends`) so
 existing decks aren't overwritten. See "The `.mtg` workspace" below.
 
@@ -71,9 +72,10 @@ they set `$MTG_HOME`) before reading or writing anything, and use that location 
 
 The subdirectories:
 
-- **`.mtg/decks/`** — where built decks are written. **Each deck gets its own subfolder**,
-  `.mtg/decks/<deck-slug>/`, holding that deck's two deliverable files (`deck.md` and `import.txt`).
-  Create the directories if they're missing.
+- **`.mtg/decks/`** — where built decks are written, **split by format**: Commander/EDH decks go
+  under `.mtg/decks/edh/` and MTG Arena Standard decks under `.mtg/decks/std/`. **Each deck gets its
+  own subfolder** — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding that deck's two deliverable
+  files (`deck.md` and `import.txt`). Create the directories if they're missing.
 - **`.mtg/collection/`** — where the user's **existing card collection** lives (the cards they
   already own), so decks can be built from — or biased toward — what they have. At the **start of a
   build, check whether `.mtg/collection/` exists and holds a collection file** (a Moxfield /

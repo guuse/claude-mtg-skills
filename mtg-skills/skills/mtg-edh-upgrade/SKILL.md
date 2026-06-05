@@ -76,9 +76,10 @@ Two parameters, same as the builder — confirm them up front unless the user al
 
 ## The deliverable
 
-Always produce **two files**, saved in their own folder under `.mtg/decks/` in the user's current working
-directory: `.mtg/decks/<deck-slug>/deck.md` and `.mtg/decks/<deck-slug>/import.txt` (create the folder if
+Always produce **two files**, saved in their own folder under `.mtg/decks/edh/` in the user's current working
+directory: `.mtg/decks/edh/<deck-slug>/deck.md` and `.mtg/decks/edh/<deck-slug>/import.txt` (create the folder if
 missing; slug = the commander name, kebab-case, with a suffix like `-upgraded` if a folder already exists).
+(Commander/EDH decks live under `decks/edh/`; MTG Arena Standard decks live under `decks/std/`.)
 See "The `.mtg` workspace" below.
 
 1. **An annotated, upgraded decklist** (`deck.md`) — the full improved 100, cards grouped by role
@@ -119,9 +120,10 @@ they set `$MTG_HOME`) before writing anything, and use that location for the res
 
 The subdirectory:
 
-- **`.mtg/decks/`** — where upgraded decks are written. **Each deck gets its own subfolder**,
-  `.mtg/decks/<deck-slug>/`, holding `deck.md` and `import.txt`. This is the same decks folder the other
-  deckbuilding skills use. Create the directories if they're missing.
+- **`.mtg/decks/`** — where upgraded decks are written, **split by format**: Commander/EDH under
+  `.mtg/decks/edh/` and MTG Arena Standard under `.mtg/decks/std/`. **Each deck gets its own subfolder**
+  — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding `deck.md` and `import.txt`. This is the same
+  decks folder the other deckbuilding skills use. Create the directories if they're missing.
 
 (The pasted decklist is taken from the prompt, not a file — there's no input file to read.)
 

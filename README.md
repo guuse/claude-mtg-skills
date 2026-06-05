@@ -151,9 +151,10 @@ See **[SYNCING.md](SYNCING.md)** for the full story (and the optional Moxfield m
 
 The workspace holds three subfolders:
 
-- **`.mtg/decks/`** — each deck gets its own folder here (e.g.
-  `.mtg/decks/atraxa-praetors-voice/`) holding its two files, `deck.md` (annotated) and
-  `import.txt` (ready to paste).
+- **`.mtg/decks/`** — built decks, **split by format**: Commander/EDH under `.mtg/decks/edh/` and
+  MTG Arena Standard under `.mtg/decks/std/`. Each deck gets its own folder there (e.g.
+  `.mtg/decks/edh/atraxa-praetors-voice/`) holding its two files, `deck.md` (annotated) and
+  `import.txt` / `arena.txt` (ready to paste).
 - **`.mtg/collection/`** — drop a collection export here (a Moxfield / Archidekt / MTGGoldfish CSV,
   or a plain `1 Card Name` list) and the builder will prefer cards you already own and flag what you
   still need to buy.

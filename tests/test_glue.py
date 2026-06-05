@@ -92,6 +92,10 @@ class PathsTests(unittest.TestCase):
         self.assertEqual(paths.default_db_path(start=start),
                          os.path.join(home, "database", "cards.sqlite"))
         self.assertEqual(paths.decks_dir(start=start), os.path.join(home, "decks"))
+        self.assertEqual(paths.decks_dir(start=start, fmt="std"),
+                         os.path.join(home, "decks", "std"))
+        self.assertEqual(paths.decks_dir(start=start, fmt="edh"),
+                         os.path.join(home, "decks", "edh"))
         self.assertEqual(paths.collection_dir(start=start),
                          os.path.join(home, "collection"))
 
@@ -103,6 +107,10 @@ class PathsTests(unittest.TestCase):
         self.assertEqual(wp["paths"]["home"], os.path.abspath(home))
         self.assertEqual(wp["paths"]["decks"],
                          os.path.join(os.path.abspath(home), "decks"))
+        self.assertEqual(wp["paths"]["decks_std"],
+                         os.path.join(os.path.abspath(home), "decks", "std"))
+        self.assertEqual(wp["paths"]["decks_edh"],
+                         os.path.join(os.path.abspath(home), "decks", "edh"))
         self.assertEqual(wp["paths"]["db_file"],
                          os.path.join(os.path.abspath(home), "database", "cards.sqlite"))
         # Resolution must be side-effect free.

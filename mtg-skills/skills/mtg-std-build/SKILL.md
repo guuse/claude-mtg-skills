@@ -49,11 +49,12 @@ Always produce **two files** (the user wants both):
    `<count> <Card Name>` per line; a blank line then `Sideboard` and 15 cards if BO3. Generate this *from*
    the annotated list so they can't drift.
 
-Use `present_files` to share both, and **save them in their own folder under `.mtg/decks/`** in the
-user's current working directory: `.mtg/decks/<deck-slug>/deck.md` and
-`.mtg/decks/<deck-slug>/arena.txt`. Create the folder if it doesn't exist. The slug is a short
-kebab-case deck name (the centerpiece or archetype, e.g. `.mtg/decks/mono-red-aggro/` or
-`.mtg/decks/dimir-bounce/`); add a distinguishing suffix for variants so existing decks aren't
+Use `present_files` to share both, and **save them in their own folder under `.mtg/decks/std/`** in the
+user's current working directory: `.mtg/decks/std/<deck-slug>/deck.md` and
+`.mtg/decks/std/<deck-slug>/arena.txt`. Create the folder if it doesn't exist. (MTG Arena Standard decks
+live under `decks/std/`; Commander/EDH decks live under `decks/edh/`.) The slug is a short
+kebab-case deck name (the centerpiece or archetype, e.g. `.mtg/decks/std/mono-red-aggro/` or
+`.mtg/decks/std/dimir-bounce/`); add a distinguishing suffix for variants so existing decks aren't
 overwritten. See "The `.mtg` workspace" below.
 
 ## The `.mtg` workspace
@@ -77,9 +78,11 @@ they set `$MTG_HOME`) before reading or writing anything, and use that location 
 
 The subdirectories:
 
-- **`.mtg/decks/`** — where built decks are written. **Each deck gets its own subfolder**,
-  `.mtg/decks/<deck-slug>/`, holding that deck's two files (`deck.md` and `arena.txt`). Create the
-  directories if they're missing. This is the same decks folder the other deckbuilding skills use.
+- **`.mtg/decks/`** — where built decks are written, **split by format**: MTG Arena Standard under
+  `.mtg/decks/std/` and Commander/EDH under `.mtg/decks/edh/`. **Each deck gets its own subfolder** —
+  for this skill, `.mtg/decks/std/<deck-slug>/`, holding that deck's two files (`deck.md` and
+  `arena.txt`). Create the directories if they're missing. This is the same decks folder the other
+  deckbuilding skills use.
 - **`.mtg/collection/mtga_collection.txt`** — the user's **Arena collection** (which cards, and how
   many, they own), as a plain `<count> <Card Name>` export. This is the **starting inventory for
   every build** and the single biggest lever on deck quality — see "First: load the user's Arena

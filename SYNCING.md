@@ -22,7 +22,9 @@ The skills resolve their workspace in this order: **`$MTG_HOME` → nearest `.mt
 
 ```
 $MTG_HOME/               ← your private "mtg-data" repo, cloned on each machine
-├── decks/               ← versioned: every deck.md guide + import.txt / arena.txt   (synced)
+├── decks/               ← versioned: built decks, split by format                    (synced)
+│   ├── edh/             ←   Commander/EDH decks (deck.md guide + import.txt)
+│   └── std/             ←   MTG Arena Standard decks (deck.md guide + arena.txt)
 ├── collection/          ← versioned: your Moxfield / Arena / Archidekt exports       (synced)
 └── database/            ← cards.sqlite + meta.json — rebuilt per machine;            (synced on demand
                             optionally shared via Git LFS                              via --push/--pull-database)
@@ -158,7 +160,7 @@ Under the hood, that's just:
 
 ```bash
 python <mtg-sync>/scripts/sync.py --pull           # before a build (the deck skill runs this)
-# ... build/upgrade a deck; deck.md + import list land in $MTG_HOME/decks/<slug>/ ...
+# ... build/upgrade a deck; deck.md + import list land in $MTG_HOME/decks/<edh|std>/<slug>/ ...
 python <mtg-sync>/scripts/sync.py --push -m "Add Atraxa superfriends deck"   # after (deck skill runs this)
 ```
 
@@ -220,9 +222,9 @@ Cloning the skills repo "cleanly" on any of these stays clean: your personal dat
 When you want the native MTG experience on a phone — nice card images, the deck playtester, sharing —
 mirror a deck into Moxfield by hand (a 30-second copy/paste, no API needed):
 
-1. **Create the deck:** New deck → **Import** → paste the contents of `decks/<slug>/import.txt`
-   (Commander) or `arena.txt` (Standard).
-2. **Carry the guide over:** paste `decks/<slug>/deck.md` into the deck's **Description / primer** field —
+1. **Create the deck:** New deck → **Import** → paste the contents of `decks/edh/<slug>/import.txt`
+   (Commander) or `decks/std/<slug>/arena.txt` (Standard).
+2. **Carry the guide over:** paste the matching `decks/<edh|std>/<slug>/deck.md` into the deck's **Description / primer** field —
    Moxfield renders Markdown, so your annotated guide shows up formatted.
 3. Set the deck **Private** or **Unlisted** if you don't want it public.
 

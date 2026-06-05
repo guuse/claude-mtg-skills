@@ -74,7 +74,7 @@ That single command:
 1. **Creates the repo** (default `mtg-data`, **private**) via the `gh` CLI — GitHub free accounts get
    unlimited private repos, so this is free. If the repo already exists it clones it; if `gh` isn't
    available, pass an existing clone URL instead: `--bootstrap --repo <url>`.
-2. **Scaffolds it fully** — `decks/`, `collection/`, a `.gitignore` that keeps the rebuildable
+2. **Scaffolds it fully** — `decks/edh/`, `decks/std/`, `collection/`, a `.gitignore` that keeps the rebuildable
    `database/` out of routine syncs, a `.gitattributes` that tracks `cards.sqlite` via **Git LFS**
    (for the optional `--push-database`/`--pull-database` flow), a `README.md`, and
    **`.claude/settings.json` that auto-installs this plugin** on any machine that opens the repo (so
@@ -115,8 +115,8 @@ just the pretty view. See [SYNCING.md](../../../SYNCING.md).
 
 ## What syncs (and what doesn't)
 
-- **Synced on every build (committed):** `decks/<slug>/` (each `deck.md` guide +
-  `import.txt`/`arena.txt`) and `collection/` (Moxfield / Arena / Archidekt exports). These are the
+- **Synced on every build (committed):** `decks/edh/<slug>/` and `decks/std/<slug>/` (each `deck.md`
+  guide + `import.txt`/`arena.txt`) and `collection/` (Moxfield / Arena / Archidekt exports). These are the
   small, irreplaceable, human-made files — `--pull`/`--push` handle them.
 - **Synced only on demand:** `database/cards.sqlite` (+ `meta.json`). The ~170 MB database is
   git-ignored by default so routine deck saves stay lean, and each machine can always rebuild it

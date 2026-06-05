@@ -9,6 +9,8 @@ Scryfall API instead of being answered incorrectly from the database.
 Public API:
     search(query, limit, order, raw, db_path) -> list[dict]   # DB-first, API fallback
     named(name, db_path) -> dict | None                       # DB-first, API fallback
+    arena_lookup(db_path) -> dict                             # {arena_id: {name,set,collector_number}}
+    arena_table_present(db_path) -> bool                      # does the DB carry the Arena-id map?
     build_database(dest, force, progress) -> dict             # download + build SQLite
     database_status(db_path) -> dict                          # exists / age / staleness
     ensure_database(db_path, progress, ask) -> dict           # auto-build-on-demand
@@ -21,7 +23,9 @@ Stdlib only — no pip install required.
 """
 
 from .paths import default_db_path, find_mtg_dir, workspace_paths
-from .query import search, named, to_sql, SUPPORTED_FALLBACK
+from .query import (
+    search, named, to_sql, SUPPORTED_FALLBACK, arena_lookup, arena_table_present,
+)
 from .build import build_database, build_from_json
 from .status import database_status, ensure_database, STALE_AFTER_DAYS
 from .cli import ensure_ready
@@ -37,6 +41,8 @@ __all__ = [
     "named",
     "to_sql",
     "SUPPORTED_FALLBACK",
+    "arena_lookup",
+    "arena_table_present",
     "build_database",
     "build_from_json",
     "database_status",

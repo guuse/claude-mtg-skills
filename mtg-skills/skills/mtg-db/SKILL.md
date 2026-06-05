@@ -31,6 +31,12 @@ how current the data is.
   type, mana value, color identity/colors, power/toughness, rarity, keywords, legalities, the
   **Game Changer** flag, **EDHREC rank**, **Arena/paper/MTGO** availability, and the **cheapest**
   EUR/USD price across all printings (Cardmarket via Scryfall for EUR).
+- **`.mtg/database/arena_cards`** (a table in the same `cards.sqlite`) — a per-printing
+  **`arena_id` → name / set / collector number** map. The deckbuilding skills don't use it; the
+  **mtg-export** skill does, to translate an MTG Arena collection (read from game memory as
+  `arena_id → owned count`) back into card names — so the exporter never downloads its own card
+  data. A database built before this table existed won't have it; **mtg-export** will ask for a
+  `--refresh` in that case.
 - **`.mtg/database/meta.json`** — records the source bulk version and build date (used for the
   staleness check).
 

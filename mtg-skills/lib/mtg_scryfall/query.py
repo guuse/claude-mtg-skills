@@ -440,6 +440,50 @@ def search(query, limit=30, order="edhrec", db_path=None, prefer_db=True):
     return [simplify_api(c) for c in api.search(query, limit=limit, order=order)]
 
 
+def arena_table_present(db_path=None):
+    """True if `cards.sqlite` carries the `arena_cards` lookup (built by current mtg-db).
+
+    Databases built before the Arena-id mapping was added won't have this table; callers
+    (the mtg-export skill) use this to decide whether the database must be refreshed.
+    """
+    db_path = db_path or default_db_path()
+    if not _usable_db(db_path):
+        return False
+    con = sqlite3.connect(db_path)
+    try:
+        row = con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='arena_cards'"
+        ).fetchone()
+        return row is not None
+    finally:
+        con.close()
+
+
+def arena_lookup(db_path=None):
+    """Return `{arena_id: {"name", "set", "collector_number"}}` from `arena_cards`.
+
+    This is the Arena-id -> card map the mtg-export skill uses to translate an MTG Arena
+    collection (a dictionary of arena_id -> owned count, read from game memory) back into
+    card names — sourced entirely from the local Scryfall database, so the exporter never
+    downloads or builds its own card data. Returns an empty dict if the table is absent.
+    """
+    db_path = db_path or default_db_path()
+    if not arena_table_present(db_path):
+        return {}
+    con = sqlite3.connect(db_path)
+    try:
+        rows = con.execute(
+            "SELECT arena_id, name, set_code, collector_number FROM arena_cards"
+        ).fetchall()
+    finally:
+        con.close()
+    return {
+        int(aid): {"name": name, "set": set_code or "", "collector_number": cn or ""}
+        for aid, name, set_code, cn in rows
+        if aid is not None
+    }
+
+
 def named(name, db_path=None, prefer_db=True):
     """Exact (case-insensitive) single-card lookup, DB-first; API fuzzy fallback."""
     db_path = db_path or default_db_path()

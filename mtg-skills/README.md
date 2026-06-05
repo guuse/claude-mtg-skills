@@ -27,6 +27,11 @@ A Claude Code plugin bundling **Magic: The Gathering** skills.
   staple signal, Game Changer count, and color legality via the local database, reads Oracle text to
   score synergy, and returns an overall ★ rating with a per-dimension scorecard, the deck's actual
   bracket, and the highest-impact fixes (handing off to mtg-edh-upgrade to apply them).
+- **[mtg-export](skills/mtg-export/SKILL.md)** — one-shot **MTG Arena collection
+  exporter**: reads your owned cards straight from the running game's memory (no anchors, no manual
+  steps), names them from the local Scryfall database (mtg-db), writes
+  `collection/MTGA-export-<date>.csv`, and pushes it via mtg-sync — so the Arena deck skills can
+  prefer cards you already own. Windows + macOS (macOS needs `sudo`).
 
 ## Install
 

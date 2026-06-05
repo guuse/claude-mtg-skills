@@ -110,6 +110,30 @@ _STAGING_COLS = [
 ]
 
 
+def arena_row(card):
+    """Map a raw Scryfall printing to an (arena_id, name, set, collector_number) tuple.
+
+    Returns None for printings with no `arena_id`. Unlike `card_to_row`, this keeps
+    *every* Arena printing — including tokens and other "extra" layouts and cards with
+    no `oracle_id` — because MTG Arena addresses them all by their per-printing `arena_id`
+    (the in-memory collection is keyed by that id). This is the lookup the mtg-export skill
+    uses to translate the Arena collection (arena_id -> count) back into card names, so the
+    exporter never has to download or build its own card data.
+    """
+    arena_id = card.get("arena_id")
+    if not arena_id:
+        return None
+    return (
+        int(arena_id),
+        card.get("name") or "",
+        (card.get("set") or "").upper(),
+        str(card.get("collector_number") or ""),
+    )
+
+
+_ARENA_COLS = ["arena_id", "name", "set_code", "collector_number"]
+
+
 def iter_bulk_objects(path, bufsize=1 << 20):
     """Yield each object from a top-level JSON array file without loading it all.
 
@@ -163,6 +187,10 @@ def _schema(con):
             eur REAL, eur_foil REAL, usd REAL, usd_foil REAL,
             arena INTEGER, paper INTEGER, mtgo INTEGER, funny INTEGER
         );
+        DROP TABLE IF EXISTS arena_staging;
+        CREATE TABLE arena_staging (
+            arena_id INTEGER, name TEXT, set_code TEXT, collector_number TEXT
+        );
         """
     )
 
@@ -207,11 +235,18 @@ def _collapse(con):
         DROP TABLE agg;
         DROP TABLE staging;
 
+        DROP TABLE IF EXISTS arena_cards;
+        CREATE TABLE arena_cards AS
+            SELECT arena_id, name, set_code, collector_number
+            FROM arena_staging GROUP BY arena_id;
+        DROP TABLE arena_staging;
+
         CREATE INDEX idx_name  ON cards(name);
         CREATE INDEX idx_ci    ON cards(color_identity);
         CREATE INDEX idx_cmc   ON cards(cmc);
         CREATE INDEX idx_rank  ON cards(edhrec_rank);
         CREATE INDEX idx_rare  ON cards(rarity_rank);
+        CREATE INDEX idx_arena ON arena_cards(arena_id);
         """
     )
     con.commit()
@@ -230,9 +265,17 @@ def build_from_json(json_path, db_path, progress=None, batch=5000):
         _schema(con)
         placeholders = ",".join("?" * len(_STAGING_COLS))
         insert = f"INSERT INTO staging ({','.join(_STAGING_COLS)}) VALUES ({placeholders})"
-        rows, seen, kept = [], 0, 0
+        arena_insert = (f"INSERT INTO arena_staging ({','.join(_ARENA_COLS)}) "
+                        f"VALUES ({','.join('?' * len(_ARENA_COLS))})")
+        rows, arena_rows, seen, kept = [], [], 0, 0
         for obj in iter_bulk_objects(json_path):
             seen += 1
+            arow = arena_row(obj)
+            if arow is not None:
+                arena_rows.append(arow)
+                if len(arena_rows) >= batch:
+                    con.executemany(arena_insert, arena_rows)
+                    arena_rows.clear()
             row = card_to_row(obj)
             if row is None:
                 continue
@@ -245,15 +288,19 @@ def build_from_json(json_path, db_path, progress=None, batch=5000):
                     progress("staged", kept)
         if rows:
             con.executemany(insert, rows)
+        if arena_rows:
+            con.executemany(arena_insert, arena_rows)
         con.commit()
         if progress:
             progress("collapsing", kept)
         _collapse(con)
         unique = con.execute("SELECT COUNT(*) FROM cards").fetchone()[0]
+        arena = con.execute("SELECT COUNT(*) FROM arena_cards").fetchone()[0]
     finally:
         con.close()
     os.replace(tmp_db, db_path)
-    return {"printings_seen": seen, "rows_staged": kept, "unique_cards": unique}
+    return {"printings_seen": seen, "rows_staged": kept,
+            "unique_cards": unique, "arena_cards": arena}
 
 
 def build_database(dest=None, force=False, progress=None, keep_json=False):
@@ -293,6 +340,7 @@ def build_database(dest=None, force=False, progress=None, keep_json=False):
         "bulk_size": meta_entry.get("size"),
         "built_at": _utcnow_iso(),
         "unique_cards": stats["unique_cards"],
+        "arena_cards": stats["arena_cards"],
         "printings_seen": stats["printings_seen"],
     }
     with open(meta_path_for(db_path), "w", encoding="utf-8") as fh:

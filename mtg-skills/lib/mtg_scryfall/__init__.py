@@ -15,6 +15,7 @@ Public API:
     default_db_path() -> str | None                           # <workspace>/database/cards.sqlite
     workspace_paths() -> dict                                 # resolved decks/collection/db dirs
     sync.status()/pull()/push(msg)/init(url) -> dict          # git-backed workspace sync
+    sync.push_database()/pull_database() -> dict              # sync cards.sqlite via Git LFS
 
 Stdlib only — no pip install required.
 """

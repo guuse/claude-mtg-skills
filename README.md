@@ -35,7 +35,7 @@ The repo is set up as a **Claude Code plugin marketplace**, so installing is a t
 | **mtg-edh-upgrade** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
 | **mtg-std-upgrade** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
 | **mtg-db** | Builds and refreshes the **local Scryfall card database** (`.mtg/database/cards.sqlite`) that the four deckbuilding skills read from instead of calling the Scryfall API on every query. Downloads Scryfall's "Default Cards" bulk file once, collapses it to one row per unique card (cheapest EUR/USD price, Arena availability, rarity, legalities, Game Changer flag, EDHREC rank), and stores it as SQLite — sharply cutting API calls and avoiding rate limits. You rarely run it directly: the deck skills **auto-build it on first use** and prompt you to refresh it when it's stale. |
-| **mtg-sync** | Keeps your **decks and collection in a private git repo** so the same data follows you across your Mac, another PC, and your phone. Sets syncing up the first time (clones your private `mtg-data` repo and scaffolds it), then **pulls before** and **pushes after** every deck build/upgrade — invoked automatically by the deck skills, the same way they rely on mtg-db for card data. Best-effort: if git or the network isn't available, it says so and the build proceeds with the local workspace. The rebuildable card database is git-ignored and never synced. See **[SYNCING.md](SYNCING.md)**. |
+| **mtg-sync** | Keeps your **decks and collection in a private git repo** so the same data follows you across your Mac, another PC, and your phone. Sets syncing up the first time (clones your private `mtg-data` repo and scaffolds it), then **pulls before** and **pushes after** every deck build/upgrade — invoked automatically by the deck skills, the same way they rely on mtg-db for card data. Best-effort: if git or the network isn't available, it says so and the build proceeds with the local workspace. The rebuildable card database stays out of routine syncs, but can optionally be shared across machines via Git LFS (`--push-database` / `--pull-database`). See **[SYNCING.md](SYNCING.md)**. |
 
 ## Install
 
@@ -142,7 +142,10 @@ The workspace holds three subfolders:
 - **`.mtg/database/`** — the **local Scryfall card database** (`cards.sqlite` + `meta.json`), built
   automatically on first use (a one-time ~540 MB download that becomes a ~170 MB SQLite file). Skills
   query this instead of the Scryfall API, so builds are fast and don't get rate-limited. It's refreshed
-  when you ask, and the skills offer to update it once it's more than 30 days old.
+  when you ask, and the skills offer to update it once it's more than 30 days old. It's rebuilt per
+  machine by default, but can optionally be **shared across machines via Git LFS** (`sync.py
+  --push-database` / `--pull-database`) so a second computer fetches it instead of rebuilding — see
+  [SYNCING.md](SYNCING.md).
 
 ## Requirements
 

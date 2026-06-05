@@ -54,6 +54,22 @@ class PathsTests(unittest.TestCase):
         db = paths.default_db_path(start=root)
         self.assertEqual(db, os.path.join(root, ".mtg", "database", "cards.sqlite"))
 
+    def test_is_lfs_pointer(self):
+        d = tempfile.mkdtemp()
+        # An unfetched LFS pointer stub.
+        ptr = os.path.join(d, "ptr.sqlite")
+        with open(ptr, "w") as fh:
+            fh.write("version https://git-lfs.github.com/spec/v1\n"
+                     "oid sha256:abc123\nsize 178000000\n")
+        self.assertTrue(paths.is_lfs_pointer(ptr))
+        # A real sqlite file (magic header) is not a pointer.
+        real = os.path.join(d, "real.sqlite")
+        with open(real, "wb") as fh:
+            fh.write(b"SQLite format 3\x00rest of the file")
+        self.assertFalse(paths.is_lfs_pointer(real))
+        # A missing file is not a pointer.
+        self.assertFalse(paths.is_lfs_pointer(os.path.join(d, "nope.sqlite")))
+
     # --- MTG_HOME workspace override --------------------------------------- #
 
     def test_mtg_home_unset_or_blank_is_none(self):
@@ -261,6 +277,19 @@ class EnsureReadyTests(unittest.TestCase):
             res = cli.ensure_ready(db_path=os.path.join(d, "cards.sqlite"), stream=buf)
         self.assertFalse(res["available"])
         self.assertIn("live Scryfall API", buf.getvalue())
+
+
+class LfsPointerGuardTests(unittest.TestCase):
+    """A DB materialized as an LFS pointer (git-lfs absent) must count as no usable DB."""
+
+    def test_database_status_treats_pointer_as_absent(self):
+        d = tempfile.mkdtemp()
+        db = os.path.join(d, "cards.sqlite")
+        with open(db, "w") as fh:
+            fh.write("version https://git-lfs.github.com/spec/v1\noid sha256:x\nsize 1\n")
+        st = status.database_status(db)
+        self.assertFalse(st["exists"])
+        self.assertTrue(st["stale"])
 
 
 if __name__ == "__main__":

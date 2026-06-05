@@ -17,7 +17,12 @@ import re
 import sqlite3
 
 from . import api
-from .paths import default_db_path
+from .paths import default_db_path, is_lfs_pointer
+
+
+def _usable_db(db_path):
+    """True if a real SQLite database is present (not absent, not an unfetched LFS pointer)."""
+    return bool(db_path) and os.path.exists(db_path) and not is_lfs_pointer(db_path)
 
 SUPPORTED_FALLBACK = "function:/otag: and any unsupported operator route to the live Scryfall API"
 
@@ -426,7 +431,7 @@ def search(query, limit=30, order="edhrec", db_path=None, prefer_db=True):
     """Search cards, DB-first. Routes to the live API when the DB is absent or the
     query uses an operator the DB can't serve. Returns a list of card dicts."""
     db_path = db_path or default_db_path()
-    if prefer_db and db_path and os.path.exists(db_path):
+    if prefer_db and _usable_db(db_path):
         translated = to_sql(query, order)
         if translated is not None:
             sql, params = translated
@@ -438,7 +443,7 @@ def search(query, limit=30, order="edhrec", db_path=None, prefer_db=True):
 def named(name, db_path=None, prefer_db=True):
     """Exact (case-insensitive) single-card lookup, DB-first; API fuzzy fallback."""
     db_path = db_path or default_db_path()
-    if prefer_db and db_path and os.path.exists(db_path):
+    if prefer_db and _usable_db(db_path):
         con = sqlite3.connect(db_path)
         try:
             row = con.execute(

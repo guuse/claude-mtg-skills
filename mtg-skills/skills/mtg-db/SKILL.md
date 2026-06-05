@@ -52,6 +52,25 @@ python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --path P   # use an expli
 python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --json     # machine-readable output
 ```
 
+## Sharing the database across machines (optional, via mtg-sync + Git LFS)
+
+By default each machine builds its own copy of `cards.sqlite` — it's a rebuildable cache, so it's
+git-ignored and doesn't travel with the synced decks/collection. If the user would rather **share the
+exact built database** (e.g. to skip the 540 MB Scryfall download on a second machine, or to keep
+prices identical across machines), the **mtg-sync** skill can ship it via **Git LFS**:
+
+- **After you build or `--refresh`** the database, offer to push it by running the **mtg-sync** skill
+  with `--push-database` (e.g. `-m "Refresh card data"`). It commits + pushes `cards.sqlite` +
+  `meta.json` via LFS (force-added past the `database/` ignore rule). This is best-effort — if the
+  workspace isn't a synced repo or `git-lfs` isn't installed, it reports `skipped` and the database
+  just stays local.
+- **On another machine**, instead of rebuilding, fetch the shared copy by running the **mtg-sync**
+  skill with `--pull-database`.
+
+Don't do this automatically on a plain local build — only when the user is using sync (an `mtg-data`
+repo) and wants the database shared. The heavy file ships **only** through these dedicated commands,
+never on a routine deck `--push`, so normal deck saves stay small.
+
 ## When the deck skills run
 
 Each deckbuilding skill checks the database at the **start** of a build and behaves as follows:

@@ -17,9 +17,14 @@ description: >-
 
 This skill keeps the **decks** and **collection** in the [MTG workspace](../mtg-db/SKILL.md)
 in a **private git repo**, so they're the same on the user's Mac, their other PC, and their
-phone. It is the companion to **mtg-db**: mtg-db rebuilds the (git-ignored, disposable) card
-database on each machine, while mtg-sync moves the irreplaceable, human-made data — deck guides,
-import lists, collection exports — between machines via git.
+phone. It is the companion to **mtg-db**: mtg-db rebuilds the (by-default git-ignored) card database
+on each machine, while mtg-sync moves the irreplaceable, human-made data — deck guides, import lists,
+collection exports — between machines via git. The card database can also be shared on demand via Git
+LFS (`--push-database` / `--pull-database`) when rebuilding everywhere isn't wanted.
+
+The card database can *optionally* travel too: it's git-ignored by default (rebuildable per machine),
+but the dedicated `--push-database`/`--pull-database` commands sync it via **Git LFS** when you'd
+rather share the built `cards.sqlite` than rebuild it everywhere (see below).
 
 **The workspace is resolved by `$MTG_HOME` → nearest `.mtg/` → `./.mtg/`** (see the mtg-db skill).
 Syncing works when that workspace is a git repo — normally a clone of the user's private
@@ -34,6 +39,8 @@ python scripts/sync.py --status            # where the workspace is + repo state
 python scripts/sync.py --pull              # before a build: fetch the latest decks/collection
 python scripts/sync.py --push -m "Add Atraxa deck"   # after a build: commit + push
 python scripts/sync.py --init <repo-url> [--path DIR]  # clone an existing repo + scaffold
+python scripts/sync.py --push-database -m "Refresh"  # ship the built cards.sqlite via Git LFS (mtg-db, after a rebuild)
+python scripts/sync.py --pull-database     # fetch the shared database (Git LFS) instead of rebuilding
 ```
 
 ## The before/after contract (how the deck skills use this)
@@ -67,9 +74,11 @@ That single command:
 1. **Creates the repo** (default `mtg-data`, **private**) via the `gh` CLI — GitHub free accounts get
    unlimited private repos, so this is free. If the repo already exists it clones it; if `gh` isn't
    available, pass an existing clone URL instead: `--bootstrap --repo <url>`.
-2. **Scaffolds it fully** — `decks/`, `collection/`, a `.gitignore` that excludes the rebuildable
-   `database/`, a `README.md`, and **`.claude/settings.json` that auto-installs this plugin** on any
-   machine that opens the repo (so the skills come along for free).
+2. **Scaffolds it fully** — `decks/`, `collection/`, a `.gitignore` that keeps the rebuildable
+   `database/` out of routine syncs, a `.gitattributes` that tracks `cards.sqlite` via **Git LFS**
+   (for the optional `--push-database`/`--pull-database` flow), a `README.md`, and
+   **`.claude/settings.json` that auto-installs this plugin** on any machine that opens the repo (so
+   the skills come along for free).
 3. **Migrates existing data** — copies any decks/collection from the current workspace (e.g. a local
    `.mtg/`) into the repo, skipping the database and any nested tool checkouts.
 4. **Commits and pushes.**
@@ -106,10 +115,28 @@ just the pretty view. See [SYNCING.md](../../../SYNCING.md).
 
 ## What syncs (and what doesn't)
 
-- **Synced (committed):** `decks/<slug>/` (each `deck.md` guide + `import.txt`/`arena.txt`) and
-  `collection/` (Moxfield / Arena / Archidekt exports).
-- **Not synced (git-ignored):** `database/` — the ~170 MB `cards.sqlite` is a rebuildable Scryfall
-  cache. Each machine rebuilds it locally in ~30 s (mtg-db); there's no reason to ship it.
+- **Synced on every build (committed):** `decks/<slug>/` (each `deck.md` guide +
+  `import.txt`/`arena.txt`) and `collection/` (Moxfield / Arena / Archidekt exports). These are the
+  small, irreplaceable, human-made files — `--pull`/`--push` handle them.
+- **Synced only on demand:** `database/cards.sqlite` (+ `meta.json`). The ~170 MB database is
+  git-ignored by default so routine deck saves stay lean, and each machine can always rebuild it
+  locally in ~30 s (mtg-db). When you'd rather **share** the exact built database across machines,
+  `--push-database` ships it and `--pull-database` fetches it — instead of every machine
+  re-downloading 540 MB from Scryfall and rebuilding.
+
+### Syncing the card database (Git LFS)
+
+Because `cards.sqlite` is ~170 MB — over GitHub's **100 MB** per-file limit on regular git — it's
+tracked with **[Git LFS](https://git-lfs.com)**. `--bootstrap`/`--init` write the `.gitattributes`
+rule and (if `git-lfs` is installed) run `git lfs install` automatically.
+
+- **After a refresh:** the **mtg-db** skill runs `python scripts/sync.py --push-database` to commit +
+  push the new `cards.sqlite` (force-added past the `database/` ignore rule) via LFS.
+- **On another/new machine:** run `python scripts/sync.py --pull-database` to fetch the shared
+  database instead of rebuilding it from Scryfall.
+- **`git-lfs` not installed?** `--push-database` reports `skipped` and the database simply stays
+  local and rebuildable — nothing breaks. (After a pull on such a machine, `cards.sqlite` is an
+  unfetched LFS pointer; the skills detect this and rebuild rather than mis-read it.)
 
 ## Troubleshooting
 

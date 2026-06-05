@@ -89,6 +89,23 @@ def meta_path_for(db_path):
     return os.path.join(os.path.dirname(db_path), META_FILENAME)
 
 
+def is_lfs_pointer(path):
+    """True if `path` is an unmaterialized Git LFS pointer rather than real content.
+
+    When the card database is synced via Git LFS (see sync.py / SYNCING.md) and a clone
+    lands on a machine without the git-lfs extension installed, the working file is a tiny
+    text stub beginning with the LFS spec URL — not the real SQLite bytes. Callers gate DB
+    use on this so a pointer is never opened as SQLite; they fall back to fetching (git lfs
+    pull) or rebuilding the database instead. A genuine `cards.sqlite` starts with the
+    "SQLite format 3" magic, so this only ever matches real pointer stubs.
+    """
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(64).startswith(b"version https://git-lfs.github.com/spec/")
+    except OSError:
+        return False
+
+
 def workspace_paths(start=None):
     """Resolve the full workspace layout, for tooling that needs to report it.
 

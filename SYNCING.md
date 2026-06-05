@@ -1,0 +1,159 @@
+# Syncing your decks & collection across machines
+
+Your built **decks** (each `deck.md` guide + import list) and your **collection** exports are the
+irreplaceable part of using these skills — the card database is just a rebuildable cache. By default
+they're written to a `.mtg/` folder in whatever directory you run from, which is git-ignored and never
+leaves that machine. This guide makes them follow you **everywhere — your Mac, a Windows PC, and your
+phone — and always**.
+
+## How it works in one sentence
+
+Point the skills at one workspace directory with the **`MTG_HOME`** environment variable, keep that
+directory in a **free private Git repo**, and `git pull` / `git push` to sync it across machines.
+
+The skills resolve their workspace in this order: **`$MTG_HOME` → nearest `.mtg/` → `./.mtg/`**. Set
+`MTG_HOME` and that's the single source of truth; leave it unset and nothing changes from today.
+
+```
+$MTG_HOME/               ← your private "mtg-data" repo, cloned on each machine
+├── decks/               ← versioned: every deck.md guide + import.txt / arena.txt   (synced)
+├── collection/          ← versioned: your Moxfield / Arena / Archidekt exports       (synced)
+└── database/            ← cards.sqlite + meta.json — git-ignored, rebuilt per machine (NOT synced)
+```
+
+The big `cards.sqlite` (~170 MB) stays out of git — it's rebuilt from Scryfall on each machine in ~30 s,
+so there's no reason to sync it. Only your decks and collection travel.
+
+> **Why git and not Moxfield/Archidekt directly?** Those are the natural *human* home for MTG decks, but
+> neither offers a free, supported write-API a tool can rely on, so the skills can't read your collection
+> or push decks to them automatically without fragile, ToS-risky scraping. Git is free (unlimited private
+> repos), works offline, runs on every OS and on mobile, and the skills already emit exactly the right
+> files. Use **Moxfield as an optional pretty mirror** (see the last section) — git stays the source of truth.
+
+---
+
+## One-time setup
+
+### 1. Create a free private data repo
+
+GitHub free accounts get **unlimited private repositories** — this costs nothing.
+
+```bash
+# on github.com: New repository → name it "mtg-data" → Private → Create.
+# then, locally:
+git clone https://github.com/<you>/mtg-data.git ~/mtg-data
+cd ~/mtg-data
+```
+
+Give it this minimal structure so the layout is committed but the database is ignored:
+
+**`~/mtg-data/.gitignore`**
+
+```gitignore
+# The card database is a large, rebuildable Scryfall cache — never sync it.
+database/
+# OS/editor noise
+.DS_Store
+Thumbs.db
+```
+
+**`~/mtg-data/README.md`** (optional, but handy on GitHub mobile)
+
+```markdown
+# mtg-data
+My Magic: The Gathering decks & collection, synced across machines for the
+claude-mtg-skills plugin. Set `MTG_HOME` to this folder on each machine.
+```
+
+Create the two tracked folders (the `.keep` files just let empty dirs be committed):
+
+```bash
+mkdir -p decks collection
+touch decks/.keep collection/.keep
+git add . && git commit -m "Initialize mtg-data workspace" && git push
+```
+
+### 2. Point the skills at it with `MTG_HOME`
+
+Set `MTG_HOME` to the absolute path of your clone. Make it permanent so every shell — and Claude Code —
+sees it.
+
+**macOS / Linux** (zsh — adjust for bash with `~/.bashrc`):
+
+```bash
+echo 'export MTG_HOME="$HOME/mtg-data"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Windows** — clone wherever you like (the different filesystem doesn't matter; you set the path here):
+
+```powershell
+# clone first, e.g. to your user folder:
+git clone https://github.com/<you>/mtg-data.git $HOME\mtg-data
+# set MTG_HOME permanently for your user (new terminals pick it up):
+setx MTG_HOME "$HOME\mtg-data"
+```
+
+> On Windows, also tell git not to rewrite line endings in your deck files:
+> `git config --global core.autocrlf input` (run once). The skills only write UTF-8 text, so this keeps
+> diffs clean across OSes.
+
+### 3. Verify and build the database once per machine
+
+```bash
+# from anywhere, confirm the skills now resolve into your data repo:
+python <skill>/scripts/scryfall_search.py --paths
+# → "from_env": true, and home/decks/collection all under your mtg-data clone.
+
+# build the local card cache into $MTG_HOME/database/ (one-time, ~30 s):
+python <skill-or-database-skill>/scripts/build_database.py
+```
+
+Or just ask Claude to build a deck — it auto-builds the database on first use, now inside `MTG_HOME`.
+
+---
+
+## The daily loop
+
+```bash
+cd "$MTG_HOME"
+git pull            # before a session: grab decks built on another machine
+# ... build/upgrade decks with the skills; deck.md + import lists land in decks/ ...
+git add -A && git commit -m "Add Atraxa superfriends deck" && git push   # after: share them
+```
+
+That's the whole sync. Pull before, push after. (If you forget, git's history means nothing is lost —
+just `pull`/`push` next time and resolve any rare conflict, which for separate deck folders won't happen.)
+
+You can ask Claude to do this for you: *"commit and push my mtg-data"* — it'll run the git commands in
+`$MTG_HOME`.
+
+---
+
+## On each environment
+
+| Environment | What you do | Result |
+|---|---|---|
+| **This Mac** | `MTG_HOME` set in `~/.zshrc`; clone at `~/mtg-data` | Full build + sync |
+| **Windows PC** | `setx MTG_HOME`; clone anywhere | Full build + sync — path differences don't matter |
+| **Mobile** | Clone `mtg-data` cleanly (e.g. **Working Copy** on iOS, or just read it on the GitHub app) | Browse every `deck.md` guide; they render as formatted Markdown. Building new decks isn't expected on a phone — viewing is |
+
+Cloning the skills repo "cleanly" on any of these stays clean: your personal data lives in the **separate**
+`mtg-data` repo, never in this open-source one.
+
+---
+
+## Optional: Moxfield as a pretty mirror
+
+When you want the native MTG experience on a phone — nice card images, the deck playtester, sharing —
+mirror a deck into Moxfield by hand (a 30-second copy/paste, no API needed):
+
+1. **Create the deck:** New deck → **Import** → paste the contents of `decks/<slug>/import.txt`
+   (Commander) or `arena.txt` (Standard).
+2. **Carry the guide over:** paste `decks/<slug>/deck.md` into the deck's **Description / primer** field —
+   Moxfield renders Markdown, so your annotated guide shows up formatted.
+3. Set the deck **Private** or **Unlisted** if you don't want it public.
+
+Your collection export *comes from* Moxfield (or Arena / Archidekt) in the first place — export it and drop
+the file into `collection/` so the skills can build from what you own. Git remains the source of truth; the
+Moxfield copy is just the view.

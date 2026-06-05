@@ -118,8 +118,14 @@ annotated decklist and a ready-to-import list. You can also start a skill explic
 
 ### Output & your collection
 
-Builds are written into a `.mtg/` folder in your current working directory (already covered by
-this repo's [`.gitignore`](.gitignore)):
+Builds are written into a **workspace** directory — by default a `.mtg/` folder in your current
+working directory (already covered by this repo's [`.gitignore`](.gitignore)). Set the **`MTG_HOME`**
+environment variable to put that workspace anywhere you like — point it at a private `mtg-data` git
+repo and your decks + collection follow you across your Mac, a Windows PC, and your phone. See
+**[SYNCING.md](SYNCING.md)** for the full cross-machine setup. Run any skill's
+`scripts/scryfall_search.py --paths` to see where the workspace currently resolves.
+
+The workspace holds three subfolders:
 
 - **`.mtg/decks/`** — each deck gets its own folder here (e.g.
   `.mtg/decks/atraxa-praetors-voice/`) holding its two files, `deck.md` (annotated) and

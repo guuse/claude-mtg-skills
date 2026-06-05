@@ -97,12 +97,22 @@ move.
 
 ## The `.mtg` workspace
 
-All of this skill's file I/O lives in a `.mtg/` directory in the user's current working directory,
-conventionally git-ignored (built output, not source).
+All of this skill's file I/O lives in one **workspace** directory holding `database/`, `decks/`, and
+`collection/`. It is resolved in this order:
 
-**If there's no clear working directory to write to** — e.g. you're running in an interactive chat with no
-project folder — **ask the user where the `.mtg/decks/` directory should live** (prompt for a path) before
-writing anything, and use that location for the rest of the session.
+1. **`$MTG_HOME`**, if that environment variable is set — the user's portable data location (e.g. a
+   private `mtg-data` git repo they clone on each machine so decks + collection follow them
+   everywhere; see the repo's `SYNCING.md`). Use it even if some subfolders don't exist yet — create them.
+2. Otherwise the nearest **`.mtg/`** at or above the current working directory (conventionally
+   git-ignored: built output and personal data, not source).
+
+To see the resolved locations any time, run **`python scripts/scryfall_search.py --paths`** — it prints
+the `decks/`, `collection/`, and `database/` paths as JSON (honouring `$MTG_HOME`) and creates nothing.
+The `.mtg/…` paths written elsewhere in this skill are shorthand for "inside the resolved workspace."
+
+**If `$MTG_HOME` is unset and there's no clear working directory to write to** — e.g. an interactive chat
+with no project folder — **ask the user where the workspace should live** (prompt for a path, or suggest
+they set `$MTG_HOME`) before writing anything, and use that location for the rest of the session.
 
 The subdirectory:
 

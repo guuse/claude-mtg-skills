@@ -77,7 +77,14 @@ def main():
     ap.add_argument("--limit", type=int, default=30, help="Max cards to return (default 30).")
     ap.add_argument("--order", default="edhrec", help="Sort order (default edhrec = popularity).")
     ap.add_argument("--json", action="store_true", help="Emit full JSON instead of a table.")
+    ap.add_argument("--paths", action="store_true",
+                    help="Print the resolved MTG workspace paths (decks/collection/database) "
+                         "as JSON and exit. Honours $MTG_HOME; see SYNCING.md.")
     args = ap.parse_args()
+
+    if args.paths:
+        print(json.dumps(mtg_scryfall.workspace_paths(), indent=2))
+        return
 
     if not args.query and not args.named:
         ap.error("provide a search query or --named NAME")

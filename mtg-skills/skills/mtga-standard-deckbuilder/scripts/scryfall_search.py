@@ -135,7 +135,14 @@ def main():
     ap.add_argument("--limit", type=int, default=30)
     ap.add_argument("--raw", action="store_true", help="Don't auto-add Standard/Arena filters.")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--paths", action="store_true",
+                    help="Print the resolved MTG workspace paths (decks/collection/database) "
+                         "as JSON and exit. Honours $MTG_HOME; see SYNCING.md.")
     args = ap.parse_args()
+
+    if args.paths:
+        print(json.dumps(mtg_scryfall.workspace_paths(), indent=2))
+        return
 
     if not (args.deck or args.named or args.query):
         ap.error("provide a query, --named NAME, or --deck FILE")

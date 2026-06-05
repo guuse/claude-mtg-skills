@@ -74,8 +74,10 @@ matters little; for Commander, prices drift, so a refresh is worth offering past
 Two cases, handled differently:
 
 1. **A filesystem exists, but there's no clear working directory** (e.g. an interactive chat with no
-   project folder). **Ask the user where `.mtg/database/` should live**, then build there by passing
-   `--path <their-path>/.mtg/database/cards.sqlite`. Use that location for the rest of the session.
+   project folder). If **`$MTG_HOME`** is set the database builds there automatically (under
+   `$MTG_HOME/database/`) — nothing to ask. Otherwise **ask the user where the database should live**,
+   then build there by passing `--path <their-path>/database/cards.sqlite`. Use that location for the
+   rest of the session. (Setting `$MTG_HOME` is the durable fix — see the repo's `SYNCING.md`.)
 2. **No filesystem and/or no code execution at all** (a pure-chat agent that can't run Python or
    write files). The database **cannot** be built — pointing it somewhere won't help. Tell the user
    plainly: "I can't build a local card database in this environment, so I'll query Scryfall live —

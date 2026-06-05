@@ -1,12 +1,23 @@
-"""Locate the `.mtg/database/` workspace.
+"""Locate the MTG workspace (`database/`, `decks/`, `collection/`).
 
-All skill file I/O lives under a `.mtg/` directory in the user's current working
-directory (the existing convention). The database lives at
-`.mtg/database/cards.sqlite` with a sibling `meta.json`.
+All skill file I/O lives under one workspace directory that holds three siblings:
+`database/` (the built `cards.sqlite` + `meta.json`), `decks/` (built decks), and
+`collection/` (the user's owned-card exports).
 
-When there is no clear working directory to write to (e.g. an interactive chat with
-no project folder), the caller should prompt the user for a path and pass it in
-explicitly — these helpers only locate/derive the default layout.
+How the workspace is resolved, in order:
+
+1. **`MTG_HOME` env var** — if set, that directory *is* the workspace. This is the knob
+   for keeping your decks + collection in one place that follows you across machines
+   (e.g. a private `mtg-data` git repo cloned on each computer; see SYNCING.md). Takes
+   precedence everywhere and is honoured even if it doesn't exist yet — the build step
+   creates the subdirectories.
+2. **Nearest `.mtg/` at or above the cwd** — the original convention, so the skills find
+   the same workspace whether invoked from the project root or a subdirectory.
+3. **`./.mtg/`** — the cwd-relative default when nothing else is found.
+
+When there is no clear working directory to write to (e.g. an interactive chat with no
+project folder), the caller should prompt the user for a path (or have them set
+`MTG_HOME`) and pass it in explicitly — these helpers only locate/derive the layout.
 """
 
 import os
@@ -15,12 +26,27 @@ DB_FILENAME = "cards.sqlite"
 META_FILENAME = "meta.json"
 
 
-def find_mtg_dir(start=None):
-    """Return the nearest existing `.mtg` directory at or above `start`, else None.
+def mtg_home():
+    """Return the workspace root from `MTG_HOME` (expanded, absolute), or None.
 
-    Walks up from `start` (default: cwd) looking for a `.mtg/` folder, so the skills
-    find the same workspace whether invoked from the project root or a subdirectory.
+    An unset or empty/whitespace-only `MTG_HOME` is treated as "not configured" so a
+    stray empty value never silently redirects file I/O to the filesystem root.
     """
+    raw = os.environ.get("MTG_HOME")
+    if not raw or not raw.strip():
+        return None
+    return os.path.abspath(os.path.expanduser(raw.strip()))
+
+
+def find_mtg_dir(start=None):
+    """Return the workspace directory: `MTG_HOME` if set, else the nearest `.mtg/`.
+
+    Walks up from `start` (default: cwd) looking for a `.mtg/` folder. Returns None only
+    when `MTG_HOME` is unset and no `.mtg/` exists at or above `start`.
+    """
+    home = mtg_home()
+    if home:
+        return home
     cur = os.path.abspath(start or os.getcwd())
     while True:
         candidate = os.path.join(cur, ".mtg")
@@ -32,17 +58,55 @@ def find_mtg_dir(start=None):
         cur = parent
 
 
+def _workspace(mtg_dir=None, start=None):
+    """The workspace root to build subdirs from. Falls back to `./.mtg`."""
+    return mtg_dir or find_mtg_dir(start) or os.path.join(
+        os.path.abspath(start or os.getcwd()), ".mtg")
+
+
 def database_dir(mtg_dir=None, start=None):
-    """Return `<.mtg>/database`, creating nothing. Falls back to `./.mtg/database`."""
-    base = mtg_dir or find_mtg_dir(start) or os.path.join(os.path.abspath(start or os.getcwd()), ".mtg")
-    return os.path.join(base, "database")
+    """Return `<workspace>/database`, creating nothing."""
+    return os.path.join(_workspace(mtg_dir, start), "database")
+
+
+def decks_dir(mtg_dir=None, start=None):
+    """Return `<workspace>/decks`, creating nothing."""
+    return os.path.join(_workspace(mtg_dir, start), "decks")
+
+
+def collection_dir(mtg_dir=None, start=None):
+    """Return `<workspace>/collection`, creating nothing."""
+    return os.path.join(_workspace(mtg_dir, start), "collection")
 
 
 def default_db_path(start=None):
-    """Path to `cards.sqlite` under the nearest `.mtg/` (existing or cwd-relative)."""
+    """Path to `cards.sqlite` under the resolved workspace."""
     return os.path.join(database_dir(start=start), DB_FILENAME)
 
 
 def meta_path_for(db_path):
     """`meta.json` path sitting beside the given database file."""
     return os.path.join(os.path.dirname(db_path), META_FILENAME)
+
+
+def workspace_paths(start=None):
+    """Resolve the full workspace layout, for tooling that needs to report it.
+
+    Returns a dict with the workspace root and its three siblings (plus the db file),
+    each as an absolute path with an `_exists` flag, and `from_env` to show whether
+    `MTG_HOME` drove the result. Creates nothing.
+    """
+    root = _workspace(start=start)
+    db = os.path.join(root, "database", DB_FILENAME)
+    layout = {
+        "home": root,
+        "database": os.path.join(root, "database"),
+        "decks": os.path.join(root, "decks"),
+        "collection": os.path.join(root, "collection"),
+        "db_file": db,
+    }
+    return {
+        "from_env": mtg_home() is not None,
+        "paths": layout,
+        "exists": {k: os.path.exists(v) for k, v in layout.items()},
+    }

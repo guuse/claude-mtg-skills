@@ -27,3 +27,11 @@ Claude Code:
 /plugin marketplace add guuse/claude-mtg-skills
 /plugin install mtg-skills@claude-mtg-skills
 ```
+
+## Where your decks & collection live
+
+Built decks and your collection go in a workspace directory — `.mtg/` in the current folder by
+default, or wherever you point the **`MTG_HOME`** env var. Set `MTG_HOME` to a private `mtg-data`
+git repo to sync decks + collection across machines and mobile; see
+[SYNCING.md](../SYNCING.md). Run any skill's `scripts/scryfall_search.py --paths` to see the
+resolved locations.

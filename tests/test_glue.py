@@ -20,6 +20,16 @@ from mtg_scryfall import paths, status, cli, api, build  # noqa: E402
 
 
 class PathsTests(unittest.TestCase):
+    def setUp(self):
+        # Insulate every path test from an ambient MTG_HOME in the dev environment;
+        # individual tests opt in by setting os.environ["MTG_HOME"].
+        self._env = mock.patch.dict(os.environ, {}, clear=False)
+        self._env.start()
+        os.environ.pop("MTG_HOME", None)
+
+    def tearDown(self):
+        self._env.stop()
+
     def test_find_mtg_dir_walks_up(self):
         root = tempfile.mkdtemp()
         os.makedirs(os.path.join(root, ".mtg", "database"))
@@ -43,6 +53,54 @@ class PathsTests(unittest.TestCase):
         root = tempfile.mkdtemp()  # no .mtg here
         db = paths.default_db_path(start=root)
         self.assertEqual(db, os.path.join(root, ".mtg", "database", "cards.sqlite"))
+
+    # --- MTG_HOME workspace override --------------------------------------- #
+
+    def test_mtg_home_unset_or_blank_is_none(self):
+        self.assertIsNone(paths.mtg_home())
+        os.environ["MTG_HOME"] = "   "  # whitespace-only must not redirect I/O
+        self.assertIsNone(paths.mtg_home())
+
+    def test_mtg_home_expands_user_and_absolutizes(self):
+        os.environ["MTG_HOME"] = os.path.join("~", "mtg-data")
+        self.assertEqual(paths.mtg_home(),
+                         os.path.join(os.path.expanduser("~"), "mtg-data"))
+
+    def test_mtg_home_overrides_nearby_dotmtg(self):
+        # Even with a .mtg right at `start`, MTG_HOME wins for every derived path.
+        start = tempfile.mkdtemp()
+        os.makedirs(os.path.join(start, ".mtg"))
+        home = os.path.abspath(tempfile.mkdtemp())
+        os.environ["MTG_HOME"] = home
+        self.assertEqual(paths.find_mtg_dir(start), home)
+        self.assertEqual(paths.default_db_path(start=start),
+                         os.path.join(home, "database", "cards.sqlite"))
+        self.assertEqual(paths.decks_dir(start=start), os.path.join(home, "decks"))
+        self.assertEqual(paths.collection_dir(start=start),
+                         os.path.join(home, "collection"))
+
+    def test_workspace_paths_from_env_creates_nothing(self):
+        home = os.path.join(tempfile.mkdtemp(), "mtg-data")  # does not exist yet
+        os.environ["MTG_HOME"] = home
+        wp = paths.workspace_paths()
+        self.assertTrue(wp["from_env"])
+        self.assertEqual(wp["paths"]["home"], os.path.abspath(home))
+        self.assertEqual(wp["paths"]["decks"],
+                         os.path.join(os.path.abspath(home), "decks"))
+        self.assertEqual(wp["paths"]["db_file"],
+                         os.path.join(os.path.abspath(home), "database", "cards.sqlite"))
+        # Resolution must be side-effect free.
+        self.assertFalse(os.path.exists(home))
+        self.assertFalse(any(wp["exists"].values()))
+
+    def test_workspace_paths_without_env_uses_cwd_dotmtg(self):
+        root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(root, ".mtg", "decks"))  # decks exists, collection doesn't
+        wp = paths.workspace_paths(start=root)
+        self.assertFalse(wp["from_env"])
+        self.assertEqual(wp["paths"]["home"], os.path.join(root, ".mtg"))
+        self.assertTrue(wp["exists"]["decks"])
+        self.assertFalse(wp["exists"]["collection"])
 
 
 def _fake_build(dest=None, progress=None, force=False, **kw):

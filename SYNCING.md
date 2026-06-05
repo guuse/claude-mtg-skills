@@ -6,10 +6,16 @@ they're written to a `.mtg/` folder in whatever directory you run from, which is
 leaves that machine. This guide makes them follow you **everywhere — your Mac, a Windows PC, and your
 phone — and always**.
 
+> **The easy path: the `mtg-sync` skill.** Everything below is automated by the bundled **mtg-sync**
+> skill — just say *"set up syncing for my decks"* and it asks for your repo, clones it, scaffolds it,
+> and tells you the `MTG_HOME` line to set. After that the deck skills **pull before** and **push after**
+> every build automatically. This document is the manual reference for what that skill does under the hood.
+
 ## How it works in one sentence
 
 Point the skills at one workspace directory with the **`MTG_HOME`** environment variable, keep that
-directory in a **free private Git repo**, and `git pull` / `git push` to sync it across machines.
+directory in a **free private Git repo**, and `git pull` / `git push` to sync it across machines (the
+**mtg-sync** skill runs those pulls/pushes for you, around each build).
 
 The skills resolve their workspace in this order: **`$MTG_HOME` → nearest `.mtg/` → `./.mtg/`**. Set
 `MTG_HOME` and that's the single source of truth; leave it unset and nothing changes from today.
@@ -115,18 +121,22 @@ Or just ask Claude to build a deck — it auto-builds the database on first use,
 
 ## The daily loop
 
+With the **mtg-sync** skill set up, **there is no manual loop** — the deck skills pull before they
+build and push after they save, automatically. Build a deck on your laptop, and it's on your other PC
+and phone the next time you pull there.
+
+Under the hood, that's just:
+
 ```bash
-cd "$MTG_HOME"
-git pull            # before a session: grab decks built on another machine
-# ... build/upgrade decks with the skills; deck.md + import lists land in decks/ ...
-git add -A && git commit -m "Add Atraxa superfriends deck" && git push   # after: share them
+python <mtg-sync>/scripts/sync.py --pull           # before a build (the deck skill runs this)
+# ... build/upgrade a deck; deck.md + import list land in $MTG_HOME/decks/<slug>/ ...
+python <mtg-sync>/scripts/sync.py --push -m "Add Atraxa superfriends deck"   # after (deck skill runs this)
 ```
 
-That's the whole sync. Pull before, push after. (If you forget, git's history means nothing is lost —
-just `pull`/`push` next time and resolve any rare conflict, which for separate deck folders won't happen.)
-
-You can ask Claude to do this for you: *"commit and push my mtg-data"* — it'll run the git commands in
-`$MTG_HOME`.
+…which is equivalent to a `git pull --rebase` then `git add decks collection && git commit && git push`
+in `$MTG_HOME`. Best-effort: if you're offline it's a no-op and the deck is still saved locally — push it
+later with `python <mtg-sync>/scripts/sync.py --push`, or just *"sync my decks"*. Because each deck lives
+in its own folder, conflicts are practically impossible.
 
 ---
 

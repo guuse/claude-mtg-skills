@@ -32,6 +32,7 @@ Claude Code:
 
 Built decks and your collection go in a workspace directory — `.mtg/` in the current folder by
 default, or wherever you point the **`MTG_HOME`** env var. Set `MTG_HOME` to a private `mtg-data`
-git repo to sync decks + collection across machines and mobile; see
+git repo to sync decks + collection across machines and mobile; the bundled **mtg-sync** skill
+sets that up and then pulls/pushes automatically around each build. See
 [SYNCING.md](../SYNCING.md). Run any skill's `scripts/scryfall_search.py --paths` to see the
 resolved locations.

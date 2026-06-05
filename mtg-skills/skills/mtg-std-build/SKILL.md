@@ -84,6 +84,21 @@ The subdirectories:
   collection" below for how to obtain, confirm, and use it. A card the user already owns the needed
   copies of costs **0 wildcards**; the wildcard budget pays only for the gaps you fill by crafting.
 
+### Keeping decks in sync across machines (mtg-sync)
+
+If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
+use the **mtg-sync** skill at the edges of this build — **pull before, push after** — the same way
+card data comes from mtg-db:
+
+- **At the start**, before loading the Arena collection or writing anything, invoke **mtg-sync** to
+  pull (`--pull`). This first brings down decks/collection built on another machine.
+- **After saving the deck's files**, invoke **mtg-sync** to push
+  (`--push -m "<archetype>"`), so the new deck is available everywhere.
+
+**Best-effort — never block the build.** If sync reports `skipped` (syncing isn't set up) or `FAILED`
+(e.g. offline), note it in one line and continue; the deck is saved locally and can be pushed later.
+To set syncing up for the first time, use the **mtg-sync** skill.
+
 ## First: load the user's Arena collection
 
 **Before anything else, get the user's MTG Arena collection.** The deck is built primarily from

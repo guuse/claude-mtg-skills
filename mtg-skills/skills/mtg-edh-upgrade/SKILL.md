@@ -122,6 +122,21 @@ The subdirectory:
 
 (The pasted decklist is taken from the prompt, not a file — there's no input file to read.)
 
+### Keeping decks in sync across machines (mtg-sync)
+
+If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
+use the **mtg-sync** skill at the edges of this upgrade — **pull before, push after** — the same way
+card data comes from mtg-db:
+
+- **At the start**, before writing anything, invoke **mtg-sync** to pull (`--pull`),
+  bringing down any decks built on another machine first.
+- **After saving the upgraded deck's files**, invoke **mtg-sync** to push
+  (`--push -m "<commander / archetype>"`), so the deck is available everywhere.
+
+**Best-effort — never block the upgrade.** If sync reports `skipped` (syncing isn't set up) or
+`FAILED` (e.g. offline), note it in one line and continue; the deck is saved locally and can be
+pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
+
 ## The method (diagnose, then upgrade)
 
 The target shape of a functioning 100 and the reasoning behind every number live in

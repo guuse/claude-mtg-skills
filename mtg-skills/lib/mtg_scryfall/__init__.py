@@ -14,6 +14,7 @@ Public API:
     ensure_database(db_path, progress, ask) -> dict           # auto-build-on-demand
     default_db_path() -> str | None                           # <workspace>/database/cards.sqlite
     workspace_paths() -> dict                                 # resolved decks/collection/db dirs
+    sync.status()/pull()/push(msg)/init(url) -> dict          # git-backed workspace sync
 
 Stdlib only — no pip install required.
 """
@@ -25,6 +26,7 @@ from .status import database_status, ensure_database, STALE_AFTER_DAYS
 from .cli import ensure_ready
 from .arena import TIER_CAPS, BASICS, parse_deck, tally_wildcards
 from .validate import validate_commander_import, validate_arena_import
+from . import sync
 
 __all__ = [
     "default_db_path",
@@ -46,4 +48,5 @@ __all__ = [
     "tally_wildcards",
     "validate_commander_import",
     "validate_arena_import",
+    "sync",
 ]

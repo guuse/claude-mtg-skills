@@ -81,6 +81,21 @@ The subdirectories:
   empty, build normally and let the user know they can drop a collection export into
   `.mtg/collection/` to get collection-aware builds next time.
 
+### Keeping decks in sync across machines (mtg-sync)
+
+If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
+use the **mtg-sync** skill at the edges of this build — **pull before, push after** — the same way
+card data comes from mtg-db:
+
+- **At the start**, before reading the collection or writing anything, invoke **mtg-sync** to pull
+  (`--pull`). This first brings down decks/collection built on another machine.
+- **After saving the deck's files**, invoke **mtg-sync** to push
+  (`--push -m "<commander / archetype>"`), so the new deck is available everywhere.
+
+**Best-effort — never block the build.** If sync reports `skipped` (syncing isn't set up) or `FAILED`
+(e.g. offline), note it in one line and continue; the deck is saved locally and can be pushed later.
+To set syncing up for the first time, use the **mtg-sync** skill.
+
 ## Before you build: always confirm bracket and budget
 
 Two parameters change almost every card choice, so confirm them up front (the user has asked that you

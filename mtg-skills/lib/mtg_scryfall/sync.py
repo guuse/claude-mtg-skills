@@ -14,10 +14,75 @@ Design rules (mirroring how the database is best-effort, never blocking):
   logic is exercised without touching a real repo or the network.
 """
 
+import json
 import os
+import shutil
 import subprocess
 
 from .paths import mtg_home, workspace_paths
+
+# The plugin this data repo auto-installs. Used to generate the repo's
+# .claude/settings.json so a fresh clone wires up the skills with no manual steps.
+MARKETPLACE_REPO = "guuse/claude-mtg-skills"
+MARKETPLACE_NAME = "claude-mtg-skills"
+PLUGIN_NAME = "mtg-skills"
+DEFAULT_REPO_NAME = "mtg-data"
+
+GITIGNORE_TEMPLATE = (
+    "# Rebuildable Scryfall card cache — never sync it (the mtg-db skill rebuilds it per machine).\n"
+    "database/\n\n"
+    "# OS / Python noise\n"
+    ".DS_Store\n"
+    "__pycache__/\n"
+    "*.pyc\n"
+)
+
+
+def _settings_json():
+    """The .claude/settings.json that makes a clone auto-install + auto-update the plugin."""
+    hook = (
+        f"claude plugin list 2>/dev/null | grep -q '{PLUGIN_NAME}@{MARKETPLACE_NAME}' "
+        f"|| {{ claude plugin marketplace add {MARKETPLACE_REPO} >/dev/null 2>&1; "
+        f"claude plugin install {PLUGIN_NAME}@{MARKETPLACE_NAME} --scope user >/dev/null 2>&1; }} || true"
+    )
+    data = {
+        "extraKnownMarketplaces": {
+            MARKETPLACE_NAME: {
+                "source": {"source": "github", "repo": MARKETPLACE_REPO},
+                "autoUpdate": True,
+            }
+        },
+        "enabledPlugins": {f"{PLUGIN_NAME}@{MARKETPLACE_NAME}": True},
+        "hooks": {
+            "SessionStart": [
+                {"matcher": "startup", "hooks": [{"type": "command", "command": hook}]}
+            ]
+        },
+    }
+    return json.dumps(data, indent=2) + "\n"
+
+
+def _readme():
+    """The data repo's README (written only if one doesn't already exist)."""
+    return (
+        f"# {DEFAULT_REPO_NAME}\n\n"
+        f"My private Magic: The Gathering workspace for the "
+        f"[{PLUGIN_NAME}](https://github.com/{MARKETPLACE_REPO}) plugin — decks, deck guides, and "
+        "collection exports, synced across machines and mobile.\n\n"
+        "Point **`MTG_HOME`** at this folder and the skills read/write here. The plugin "
+        "**auto-installs** from the marketplace on session start (see `.claude/settings.json`), so a "
+        "fresh clone is ready to build and tune decks with no manual setup.\n\n"
+        "```\n"
+        "decks/<slug>/   built decks (deck.md + import.txt / arena.txt)    synced\n"
+        "collection/     collection exports (Archidekt / Arena / Moxfield) synced\n"
+        "database/       cards.sqlite — Scryfall cache, git-ignored, rebuilt per machine (NOT synced)\n"
+        "```\n\n"
+        "```bash\n"
+        'export MTG_HOME="$(pwd)"   # macOS/Linux;  Windows:  setx MTG_HOME "%CD%"\n'
+        "```\n\n"
+        "Decks/collection sync via the **mtg-sync** skill (pull before a build, push after). The card "
+        "database never syncs — the **mtg-db** skill rebuilds it locally.\n"
+    )
 
 
 def _run(args, cwd=None):
@@ -164,23 +229,43 @@ def push(message=None):
 
 
 def _scaffold(home):
-    """Ensure decks/ + collection/ exist and database/ is git-ignored inside `home`."""
+    """Make `home` a complete, auto-install-ready data workspace. Non-destructive:
+    creates only what's missing, never clobbers existing files.
+
+    Ensures decks/ + collection/ (with .keep), a .gitignore that excludes the rebuildable
+    database/, a README, and .claude/settings.json (which wires up plugin auto-install).
+    """
     for sub in ("decks", "collection"):
         os.makedirs(os.path.join(home, sub), exist_ok=True)
         keep = os.path.join(home, sub, ".keep")
         if not os.path.exists(keep):
             with open(keep, "w", encoding="utf-8"):
                 pass
+
     gi = os.path.join(home, ".gitignore")
-    existing = ""
-    if os.path.exists(gi):
+    if not os.path.exists(gi):
+        with open(gi, "w", encoding="utf-8") as fh:
+            fh.write(GITIGNORE_TEMPLATE)
+    else:
         with open(gi, encoding="utf-8") as fh:
             existing = fh.read()
-    if "database/" not in existing.split():
-        with open(gi, "a", encoding="utf-8") as fh:
-            if existing and not existing.endswith("\n"):
-                fh.write("\n")
-            fh.write("# Rebuildable Scryfall card cache — never sync it.\ndatabase/\n")
+        if "database/" not in existing.split():
+            with open(gi, "a", encoding="utf-8") as fh:
+                if existing and not existing.endswith("\n"):
+                    fh.write("\n")
+                fh.write("# Rebuildable Scryfall card cache — never sync it.\ndatabase/\n")
+
+    readme = os.path.join(home, "README.md")
+    if not os.path.exists(readme):
+        with open(readme, "w", encoding="utf-8") as fh:
+            fh.write(_readme())
+
+    claude_dir = os.path.join(home, ".claude")
+    os.makedirs(claude_dir, exist_ok=True)
+    settings = os.path.join(claude_dir, "settings.json")
+    if not os.path.exists(settings):
+        with open(settings, "w", encoding="utf-8") as fh:
+            fh.write(_settings_json())
 
 
 def init(url, path=None):
@@ -206,3 +291,184 @@ def init(url, path=None):
         return {"ok": False, "path": dest, "cloned": False, "reason": err or out}
     _scaffold(dest)
     return {"ok": True, "path": dest, "cloned": True, "reason": None}
+
+
+# --------------------------------------------------------------------------- #
+# One-command bootstrap: create-or-reuse the repo, scaffold, migrate, push.    #
+# --------------------------------------------------------------------------- #
+
+def gh_available():
+    """True if the GitHub CLI (`gh`) is callable — needed to *create* a repo."""
+    return _run(["gh", "--version"])[0] == 0
+
+
+def _normalize_repo(repo):
+    """Classify the repo argument. Returns (kind, value, name).
+
+    kind: 'url'  (clone an existing remote, no create),
+          'slug' ('owner/name'), or
+          'name' (bare name → create under the gh-authenticated user).
+    """
+    r = (repo or DEFAULT_REPO_NAME).strip()
+    if "://" in r or r.startswith("git@") or r.endswith(".git"):
+        name = r.rstrip("/").split("/")[-1]
+        if name.endswith(".git"):
+            name = name[:-4]
+        return "url", r, name
+    if "/" in r:
+        return "slug", r, r.split("/")[-1]
+    return "name", r, r
+
+
+def _ignore_noise(dirpath, names):
+    """copytree ignore: drop VCS/OS noise and any *nested git repo* (a checked-out tool,
+    e.g. a collection exporter — not the user's data)."""
+    drop = set()
+    for n in names:
+        if n in (".git", ".DS_Store", "__pycache__"):
+            drop.add(n)
+            continue
+        p = os.path.join(dirpath, n)
+        if os.path.isdir(p) and os.path.exists(os.path.join(p, ".git")):
+            drop.add(n)
+    return drop
+
+
+def _count_data_files(d):
+    n = 0
+    for root, dirs, files in os.walk(d):
+        dirs[:] = [x for x in dirs if x not in (".git", "__pycache__")]
+        n += sum(1 for f in files if f not in (".keep", ".DS_Store"))
+    return n
+
+
+def migrate(source, home):
+    """Copy decks/ + collection/ from `source` into `home` (merging, non-destructive).
+
+    Skips OS noise and nested git repos. Returns {decks, collection, from, skipped}.
+    """
+    src = os.path.abspath(os.path.expanduser(source))
+    dst = os.path.abspath(os.path.expanduser(home))
+    result = {"decks": 0, "collection": 0, "from": src, "skipped": None}
+    if src == dst:
+        result["skipped"] = "source is the destination"
+        return result
+    if not os.path.isdir(src):
+        result["skipped"] = "source does not exist"
+        return result
+    for sub in ("decks", "collection"):
+        s = os.path.join(src, sub)
+        if os.path.isdir(s):
+            shutil.copytree(s, os.path.join(dst, sub), dirs_exist_ok=True, ignore=_ignore_noise)
+            result[sub] = _count_data_files(os.path.join(dst, sub))
+    return result
+
+
+def _auto_source(dest):
+    """If the resolved workspace differs from `dest` and holds decks/collection, return it."""
+    cand = os.path.abspath(os.path.expanduser(workspace_root()))
+    if cand != dest and (os.path.isdir(os.path.join(cand, "decks"))
+                         or os.path.isdir(os.path.join(cand, "collection"))):
+        return cand
+    return None
+
+
+def bootstrap(repo=None, dest=None, private=True, source=None, do_push=True):
+    """Seed the entire data repo in one shot. Best-effort, never raises.
+
+    Steps: obtain a clone at `dest` (reuse if already a repo; clone if the remote exists;
+    otherwise create it via `gh`), scaffold the full layout (incl. .claude/settings.json
+    for plugin auto-install), migrate existing decks/collection, commit, and push.
+
+    `repo`   : bare name (default 'mtg-data'), 'owner/name', or a clone URL.
+    `dest`   : local path (default '~/<name>').
+    `source` : workspace to migrate from (default: auto-detected current workspace).
+    Returns a dict describing exactly what happened (and an `mtg_home` path to export).
+    """
+    if not git_available():
+        return {"ok": False, "reason": "git is not installed"}
+
+    kind, value, name = _normalize_repo(repo)
+    dest = os.path.abspath(os.path.expanduser(dest or os.path.join("~", name)))
+    slug = value if kind == "slug" else None
+    url = value if kind == "url" else None
+    created = False
+
+    if is_git_repo(dest):
+        action = "reused existing clone"
+    elif os.path.isdir(dest) and os.listdir(dest):
+        return {"ok": False, "path": dest,
+                "reason": f"{dest} exists, is not empty, and is not a git repo"}
+    else:
+        os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+        if url:
+            code, out, err = _run(["git", "clone", url, dest])
+            if code != 0:
+                return {"ok": False, "path": dest, "reason": f"clone failed: {err or out}"}
+            action = "cloned"
+        else:
+            if not gh_available():
+                return {"ok": False, "path": dest,
+                        "reason": "the gh CLI isn't available to create the repo — install/auth "
+                                  "`gh`, or pass an existing clone URL with --repo"}
+            if slug is None:
+                code, login, err = _run(["gh", "api", "user", "-q", ".login"])
+                if code != 0 or not login:
+                    return {"ok": False, "path": dest,
+                            "reason": f"could not resolve your GitHub user via gh: {err or 'unknown'}"}
+                slug = f"{login}/{name}"
+            if _run(["gh", "repo", "view", slug])[0] == 0:
+                code, out, err = _run(["gh", "repo", "clone", slug, dest])
+                if code != 0:
+                    return {"ok": False, "path": dest, "reason": f"gh clone failed: {err or out}"}
+                action = "cloned existing remote"
+            else:
+                vis = "--private" if private else "--public"
+                code, out, err = _run(
+                    ["gh", "repo", "create", slug, vis,
+                     "--description", "My MTG decks & collection (claude-mtg-skills)"])
+                if code != 0:
+                    return {"ok": False, "path": dest, "reason": f"gh repo create failed: {err or out}"}
+                created = True
+                code, out, err = _run(["gh", "repo", "clone", slug, dest])
+                if code != 0:
+                    return {"ok": False, "path": dest, "created": True,
+                            "reason": f"created the repo but clone failed: {err or out}"}
+                action = "created + cloned"
+
+    _scaffold(dest)
+
+    src = source if source is not None else _auto_source(dest)
+    migrated = migrate(src, dest) if src else {"decks": 0, "collection": 0, "from": None, "skipped": "none"}
+
+    _run(["git", "add", "-A"], cwd=dest)
+    _, staged, _ = _run(["git", "diff", "--cached", "--name-only"], cwd=dest)
+    committed = False
+    if staged:
+        cc = _run(["git", "commit", "-m",
+                   "Seed MTG data workspace (decks, collection, skills auto-install)"], cwd=dest)
+        if cc[0] != 0:
+            return {"ok": False, "path": dest, "created": created, "migrated": migrated,
+                    "reason": f"commit failed: {cc[2] or cc[1]} "
+                              "(set git user.name/user.email, then re-run --bootstrap)"}
+        committed = True
+
+    pushed = None
+    push_message = None
+    if do_push:
+        cp = _run(["git", "push", "-u", "origin", "HEAD"], cwd=dest)
+        pushed = cp[0] == 0
+        push_message = cp[1] or cp[2]
+
+    return {
+        "ok": True,
+        "path": dest,
+        "action": action,
+        "created": created,
+        "migrated": migrated,
+        "committed": committed,
+        "pushed": pushed,
+        "push_message": push_message,
+        "mtg_home": dest,
+        "reason": None if (pushed in (None, True)) else f"push failed: {push_message}",
+    }

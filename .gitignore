@@ -1,24 +1,8 @@
-# MTG skill workspace — built decks and personal collection data, not source.
-# Keep the .mtg/ folder structure (via .gitkeep files) but ignore everything
-# the skill builds into it.
-.mtg/*
-!.mtg/.gitkeep
-
-# Keep .mtg/decks/ as an empty tracked folder, ignore the decks built into it.
-!.mtg/decks/
-.mtg/decks/*
-!.mtg/decks/.gitkeep
-
-# Keep .mtg/collection/ as an empty tracked folder, ignore collection data dropped in.
-!.mtg/collection/
-.mtg/collection/*
-!.mtg/collection/.gitkeep
-
-# Keep .mtg/database/ as an empty tracked folder, ignore the built card database
-# (cards.sqlite + meta.json) — it's a large, machine-built artifact, not source.
-!.mtg/database/
-.mtg/database/*
-!.mtg/database/.gitkeep
+# MTG skill workspace — built decks, collection exports, and the card database all live
+# under .mtg/ (or wherever $MTG_HOME points). Generated/personal data, not source, so
+# ignore the whole folder. The skills create it on demand; sync decks + collection with the
+# mtg-sync skill instead of committing them here (see SYNCING.md).
+.mtg/
 
 # Python bytecode from the bundled helper scripts.
 __pycache__/

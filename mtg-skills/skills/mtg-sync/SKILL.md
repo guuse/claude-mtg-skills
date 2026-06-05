@@ -29,10 +29,11 @@ Syncing works when that workspace is a git repo — normally a clone of the user
 All operations go through the bundled helper:
 
 ```bash
+python scripts/sync.py --bootstrap         # ONE-COMMAND first-time setup (create repo, scaffold, migrate, push)
 python scripts/sync.py --status            # where the workspace is + repo state
 python scripts/sync.py --pull              # before a build: fetch the latest decks/collection
 python scripts/sync.py --push -m "Add Atraxa deck"   # after a build: commit + push
-python scripts/sync.py --init <repo-url> [--path DIR]  # first-time clone + scaffold
+python scripts/sync.py --init <repo-url> [--path DIR]  # clone an existing repo + scaffold
 ```
 
 ## The before/after contract (how the deck skills use this)
@@ -52,36 +53,48 @@ saved in the local workspace and can be pushed later. Do **not** ask the user to
 mid-build; just note it and move on. Only **--init** failures are worth pausing on, because the
 user explicitly asked to set syncing up.
 
-## First-time setup (when syncing isn't configured yet)
+## First-time setup — one command
 
-Run this when the user asks to "store my decks somewhere" / "use them on my other machine", or
-when `--status` shows the workspace isn't a git repo. Walk them through it:
+When the user asks to "store my decks somewhere" / "use them on my other machine", or when
+`--status` shows the workspace isn't a git repo, run **`--bootstrap`**. It does the whole setup in
+one shot and is safe to re-run (idempotent):
 
-1. **Ask for their private data repo.** They need a repo dedicated to their MTG data (decks +
-   collection), separate from this open-source skills repo. Ask:
-   - *"Do you already have a private repo for your MTG data, or should we make one?"*
-   - **GitHub free accounts get unlimited private repos**, so this costs nothing. If they don't
-     have one: have them create an empty private repo (e.g. on github.com, name it `mtg-data`),
-     or, if the `gh` CLI is available and authenticated, offer to create it:
-     `gh repo create mtg-data --private`.
-   - Get the clone URL (SSH `git@github.com:<user>/mtg-data.git`, or HTTPS).
-2. **Clone + scaffold:** `python scripts/sync.py --init <repo-url>` (defaults to `~/mtg-data`; pass
-   `--path` to clone elsewhere). This clones the repo and ensures it has `decks/`, `collection/`,
-   and a `.gitignore` that excludes the rebuildable `database/`.
-3. **Point the skills at it with `MTG_HOME`.** The script prints the exact line. Make it permanent:
-   - macOS/Linux: `echo 'export MTG_HOME="$HOME/mtg-data"' >> ~/.zshrc && source ~/.zshrc`
-   - Windows: `setx MTG_HOME "%USERPROFILE%\mtg-data"` (open a new terminal afterwards).
-     Also run once: `git config --global core.autocrlf input` (keeps deck-file line endings clean
-     across OSes). The clone can live anywhere on Windows — `MTG_HOME` names the path, so the
-     different filesystem doesn't matter.
-4. **Confirm:** `python scripts/sync.py --status` should show `from $MTG_HOME`, the remote, and a
-   branch. Then build the card database once (the **mtg-db** skill, or just build a deck — it
-   auto-builds), and you're ready.
-5. **Repeat on each machine:** clone the same repo, set `MTG_HOME`, build the database once. The
-   decks/collection then sync via pull/push; the database is rebuilt locally per machine.
+```bash
+python scripts/sync.py --bootstrap
+```
+
+That single command:
+1. **Creates the repo** (default `mtg-data`, **private**) via the `gh` CLI — GitHub free accounts get
+   unlimited private repos, so this is free. If the repo already exists it clones it; if `gh` isn't
+   available, pass an existing clone URL instead: `--bootstrap --repo <url>`.
+2. **Scaffolds it fully** — `decks/`, `collection/`, a `.gitignore` that excludes the rebuildable
+   `database/`, a `README.md`, and **`.claude/settings.json` that auto-installs this plugin** on any
+   machine that opens the repo (so the skills come along for free).
+3. **Migrates existing data** — copies any decks/collection from the current workspace (e.g. a local
+   `.mtg/`) into the repo, skipping the database and any nested tool checkouts.
+4. **Commits and pushes.**
+
+Useful flags: `--repo <name|owner/name|url>`, `--dest <path>` (default `~/<name>`), `--public`,
+`--from <path>` (migrate from a specific workspace), `--no-push`.
+
+**After it runs, do two things:**
+- **Set `MTG_HOME`** to the path it prints (it shows the exact line). macOS/Linux:
+  `echo 'export MTG_HOME="$HOME/mtg-data"' >> ~/.zshrc && source ~/.zshrc`; Windows:
+  `setx MTG_HOME "%USERPROFILE%\mtg-data"` (then a new terminal; also run once
+  `git config --global core.autocrlf input`). Offer to append the export line for them.
+- **Build a deck** (the card database auto-builds on first use). Done.
+
+**On each additional machine:** just `--bootstrap` again (it clones the existing repo and sets the
+same layout) and set `MTG_HOME`. The skills auto-install from the marketplace when the repo is
+opened; the database rebuilds locally per machine.
 
 If the user would rather not use git at all, that's fine — leave `MTG_HOME` unset (or pointed at a
 plain folder). Everything still works locally; it just won't sync. Don't push git on them.
+
+### `--init` (clone an existing repo only)
+
+If the user already has a data repo and just wants to clone + scaffold it (no create/migrate/push),
+`python scripts/sync.py --init <repo-url> [--path DIR]` does that narrower job.
 
 ## On mobile
 

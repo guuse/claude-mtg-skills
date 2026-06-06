@@ -15,9 +15,15 @@ stale database still resolve, but the Scryfall DB is the source of truth.
 Cross-platform: Windows (via `pymem`) and macOS (via Mach `task_for_pid`, needs `sudo`).
 `numpy` is required for the memory scan.
 
+This script only *exports*. Pushing the collection to the user's synced repo is done by
+the orchestrating skill afterwards via **mtg-sync**, run as the normal user — never from
+here. (On macOS the scan needs `sudo`; a push from inside this process would run git as
+root, which has neither the user's SSH key nor their git config. Keeping the push out of
+the script avoids that whole class of failure.) When run under `sudo`, the written CSV is
+chown'd back to the invoking user so exports never land root-owned.
+
 Usage:
   python export_collection.py                 # scan + write the CSV into the workspace
-  python export_collection.py --sync           # ...then push the collection via mtg-sync
   python export_collection.py --db PATH         # explicit cards.sqlite location
   python export_collection.py --out-dir DIR     # explicit collection output directory
   python export_collection.py --process NAME    # override the Arena process name
@@ -459,25 +465,21 @@ def build_lookup(db_path):
     return db
 
 
-def run_sync():
-    """Best-effort: push the collection via the sibling mtg-sync skill."""
-    sync_py = os.path.normpath(os.path.join(_HERE, "..", "..", "mtg-sync", "scripts", "sync.py"))
-    if not os.path.exists(sync_py):
-        log(f"[sync] mtg-sync script not found at {sync_py} — skipping push.")
+def chown_back(path):
+    """When run under sudo, give the written file back to the invoking user.
+
+    macOS requires root to read game memory, so the script often runs via sudo and the
+    CSV would otherwise be root-owned (the user couldn't overwrite or delete it without
+    sudo, and a later non-root mtg-sync push couldn't stage it cleanly). sudo exports
+    SUDO_UID/SUDO_GID; restore ownership to them. Best-effort and silent on non-sudo runs.
+    """
+    uid, gid = os.environ.get("SUDO_UID"), os.environ.get("SUDO_GID")
+    if not uid or not gid:
         return
-    log("[sync] pushing collection via mtg-sync...")
     try:
-        res = subprocess.run(
-            [sys.executable, sync_py, "--push", "-m", "Update MTGA collection export"],
-            capture_output=True, text=True,
-        )
-        out = (res.stdout or "").strip() or (res.stderr or "").strip()
-        if out:
-            log(out)
-        if res.returncode != 0:
-            log("[sync] push reported a problem (best-effort) — the CSV is saved locally.")
+        os.chown(path, int(uid), int(gid))
     except Exception as e:
-        log(f"[sync] push skipped: {e}")
+        log(f"[note] could not restore ownership of {path} to the invoking user: {e}")
 
 
 def main():
@@ -485,8 +487,6 @@ def main():
     ap.add_argument("--db", help="Explicit cards.sqlite path (default: workspace database).")
     ap.add_argument("--out-dir", help="Explicit collection output directory.")
     ap.add_argument("--process", help="Override the MTG Arena process name.")
-    ap.add_argument("--sync", action="store_true",
-                    help="After writing, push the collection via the mtg-sync skill.")
     args = ap.parse_args()
 
     log(f"MTGA Collection Exporter | {PLATFORM}")
@@ -552,11 +552,9 @@ def main():
         for i in final_list:
             writer.writerow([i["count"], i["name"], i["set"], "Near Mint", "English", "", ""])
 
+    chown_back(out_csv)  # if run via sudo, hand the file back to the invoking user
     log(f"\nExport complete -> {out_csv}")
     print(out_csv)  # stdout: the one machine-readable line (the path we wrote)
-
-    if args.sync:
-        run_sync()
 
 
 if __name__ == "__main__":

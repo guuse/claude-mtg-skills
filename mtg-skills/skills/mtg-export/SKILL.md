@@ -8,9 +8,10 @@ description: >-
   deckbuilding skills (mtg-std-build / mtg-std-upgrade prefer cards you already own). It is a
   one-shot: it reads the owned-card list out of the live MTGA process memory (no anchor
   cards, no manual steps), names the cards from the local Scryfall database built by the
-  mtg-db skill (never downloading its own card data), writes a Moxfield-format CSV into the
-  collection folder, and pushes it via mtg-sync. Works on Windows (via pymem) and macOS (via
-  Mach APIs; needs sudo). Requires MTG Arena installed and running.
+  mtg-db skill (never downloading its own card data), and writes a Moxfield-format CSV into
+  the collection folder. The export is then pushed by invoking the mtg-sync skill afterwards
+  (as the normal user — never from inside the export process). Works on Windows (via pymem)
+  and macOS (via Mach APIs; needs sudo). Requires MTG Arena installed and running.
 ---
 
 # MTG Arena Collection Export
@@ -50,8 +51,9 @@ database still resolve.
 
 ## How to drive it (the one-shot)
 
-Two steps — make sure the card data is ready, then run the exporter with `--sync` so the
-collection is captured **and** pushed in a single invocation:
+Three steps — ready the card data, run the exporter, then push via **mtg-sync**. The export
+script **does not push**; the orchestrating skill invokes mtg-sync afterwards, as the normal
+user, so git uses the user's SSH key and config (see *Sync* below for why this matters):
 
 1. **Ensure the local Scryfall database exists and carries the Arena-id map** (the
    `arena_cards` table). Do this via the **mtg-db** skill: check its status and, if the
@@ -60,30 +62,44 @@ collection is captured **and** pushed in a single invocation:
    that has already built a deck it's usually present — it just needs a refresh if it predates
    the Arena map.
 
-2. **Export and sync** with the bundled script:
+2. **Export** with the bundled script:
 
    ```bash
-   python "${CLAUDE_SKILL_DIR}/scripts/export_collection.py" --sync
+   python "${CLAUDE_SKILL_DIR}/scripts/export_collection.py"
    ```
 
-   `--sync` writes the CSV and then pushes the collection through the **mtg-sync** skill — one
-   shot, no human input. If the exporter exits with *"No Arena card map in the Scryfall
-   database"*, the database predates this skill: refresh it via **mtg-db** and re-run.
+   It writes the CSV and prints its path to stdout. If the exporter exits with *"No Arena card
+   map in the Scryfall database"*, the database predates this skill: refresh it via **mtg-db**
+   and re-run.
 
-On **macOS** the scanner needs root to read game memory, so run it with `sudo`:
+3. **Push** by invoking the **mtg-sync** skill (best-effort — see *Sync* below).
+
+### macOS: the scan needs root
+
+On macOS, reading game memory requires root. Plain `sudo` needs a TTY, which a non-interactive
+agent shell doesn't have (`sudo: a terminal is required to read the password`). Use the bundled
+**askpass helper** so `sudo -A` pops a native, secure macOS password dialog instead — the user
+types the password into a GUI prompt, with no terminal and nothing in the transcript:
 
 ```bash
-sudo python3 "${CLAUDE_SKILL_DIR}/scripts/export_collection.py" --sync
+SUDO_ASKPASS="${CLAUDE_SKILL_DIR}/scripts/macos-askpass.sh" \
+  sudo -A python3 "${CLAUDE_SKILL_DIR}/scripts/export_collection.py"
 ```
 
+(If you'd rather type the password in a terminal, the plain `sudo python3 …export_collection.py`
+form still works when run interactively, e.g. via the `! ` prefix in Claude Code.)
+
+When run under `sudo`, the script **chowns the written CSV back to the invoking user**
+(via `SUDO_UID`/`SUDO_GID`), so exports never land root-owned and the later mtg-sync push can
+stage them cleanly.
+
 (When installed via the plugin marketplace, `${CLAUDE_SKILL_DIR}` resolves to this skill's
-directory. The script locates the shared `mtg_scryfall` library and the sibling **mtg-sync**
-script itself, so a manually-copied layout works too as long as the skills sit side by side.)
+directory. The script locates the shared `mtg_scryfall` library itself, so a manually-copied
+layout works too as long as the skills sit side by side.)
 
 ### Flags
 
 ```
---sync               After writing the CSV, push the collection via the mtg-sync skill.
 --db PATH            Use an explicit cards.sqlite (default: the resolved workspace database).
 --out-dir DIR        Write the CSV somewhere other than <workspace>/collection/.
 --process NAME       Override the MTGA process name (default: MTGA.exe / MTGA / mtga).
@@ -106,19 +122,27 @@ there directly.
 
 ## Sync (run after every export)
 
-With `--sync`, the exporter invokes the **mtg-sync** skill to push once the CSV is written,
-committing and pushing the collection so it's available on the user's other machines
-and to the deckbuilding skills. This is **best-effort**, exactly like the deck skills' push step:
-if the workspace isn't a git repo, `git` isn't installed, or the network is down, it reports that
-in one line and the CSV still sits in the local workspace to be pushed later — the export itself
-still succeeds. If you'd rather drive sync yourself (e.g. with a custom commit message), skip
-`--sync` and invoke the **mtg-sync** skill to push the collection afterwards.
+Once the CSV is written, push it by invoking the **mtg-sync** skill — committing and pushing
+the collection so it's available on the user's other machines and to the deckbuilding skills.
+**The export script never pushes itself.** On macOS the scan runs under `sudo`, and a git push
+from inside that process would run as **root** — which has neither the user's SSH key nor their
+git identity, so the push fails with `Permission denied (publickey)`. Running mtg-sync separately,
+**as the normal user**, sidesteps that entirely.
+
+This push is **best-effort**, exactly like the deck skills' push step: if the workspace isn't a
+git repo, `git` isn't installed, or the network is down, mtg-sync reports it in one line and the
+CSV still sits in the local workspace to be pushed later — the export itself still succeeded, and
+the deckbuilding skills read the CSV from the local workspace regardless.
 
 ## Troubleshooting
 
 - **"Collection not found" / partial export** → MTGA wasn't fully loaded. Open the
   Collection/Decks tab, scroll through the whole collection, then re-run.
-- **macOS "Cannot access game memory"** → re-run with `sudo`.
+- **macOS "Cannot access game memory"** → re-run under `sudo`. From a non-interactive shell use
+  the askpass helper (`SUDO_ASKPASS=…/macos-askpass.sh sudo -A python3 …`) so the password prompt
+  is a GUI dialog rather than a TTY; see *macOS: the scan needs root* above.
+- **`sudo: a terminal is required to read the password`** → you ran plain `sudo` from a shell with
+  no TTY. Use the `sudo -A` + `SUDO_ASKPASS` form above.
 - **Windows permission error** → run the terminal as Administrator.
 - **"No Arena card map in the Scryfall database"** → the database predates this skill (or is
   missing). Run `mtg-db` with `--refresh` to rebuild it with the `arena_cards` table.

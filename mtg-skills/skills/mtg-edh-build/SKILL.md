@@ -36,7 +36,9 @@ Always produce **two files** at the end (the user expects both):
 1. **An annotated decklist** (`<commander>-deck.md`) — cards grouped by role (Commander, Lands, Ramp,
    Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing the card name, mana
    value, a one-line reason it's in the deck, and its Cardmarket price in EUR. Include the category
-   counts, the total deck price, the target bracket, and a short "how the deck wins" paragraph.
+   counts, the total deck price, the target bracket, a short "how the deck wins" paragraph, and a
+   **Deck Rating** section — an overall ★ rating (out of 5) for the deck at its bracket plus the
+   per-dimension scorecard (see "Step 9 — Rank the finished deck").
 2. **A plain importable list** (`<commander>-import.txt`) — one card per line as `1 Card Name`, ready to
    paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
@@ -115,7 +117,9 @@ If the commander is also unknown ("just build me something fun"), help them pick
 Work through these in order. Steps 2 and 6 carry the most weight — the synergy-finding in Step 2 is what
 makes the deck *yours*, and the cutting in Step 6 is what makes it *function*. Full detail, rubrics, and
 the reasoning behind every number live in `references/methodology.md`; read it before building. The
-Scryfall query cookbook for each step is in `references/scryfall-syntax.md`.
+**synergy-scoring loop that governs Step 2** (read → extract → map to tags → intersect → score, with the
+≥2–3-points-of-contact rule) is in `references/synergy.md` — read it too. The Scryfall query cookbook for
+each step is in `references/scryfall-syntax.md`.
 
 ### Step 1 — Pick / confirm the commander
 The commander defines the deck's **color identity** (the only colors allowed in the 99) and its core
@@ -125,16 +129,25 @@ haven't, offer a few options by the "rule of cool" (most fun / coolest, per the 
 are working from the real Oracle wording.
 
 ### Step 2 — Find the themed cards (the synergy engine)
-Break the commander's text into **keywords** (e.g. "enters", "attacks", "sacrifice a creature",
-"+1/+1 counter", "leaves the battlefield"). The deck wants cards that share **multiple overlapping
-synergies** with the commander — not one synergy, several — and that also synergize **with each other**.
-A good test: *could this deck win without ever casting the commander?* If yes, the 99 are pulling their
-weight.
+This is where the deck is won or lost, and it runs through the **synergy-scoring loop in
+`references/synergy.md` — read it.** The rule it enforces: **every themed card must share at least 2–3
+synergies ("points of contact") with the commander and ideally with the other cards — and the more, the
+better.** A card with one point of contact is a cut candidate, not an engine card.
 
-Source the candidates **primarily from EDHREC and mtgdecks.net** for this commander (this is what real,
-winning lists run), then use **Scryfall to fill gaps** the proven lists miss and to surface budget or
-bracket-appropriate alternatives. Gather ~40 themed candidates; you'll cut later. Apply the mana-value
-rubric in `references/methodology.md` as a first filter (expensive cards must earn their slot).
+The loop, briefly: **(1) Read** the commander's exact Oracle text and type line (`--named`) — *you* decide
+what matters. **(2) Extract** its key elements into a synergy vocabulary: triggers ("enters", "attacks", "a
+creature dies", "leaves the battlefield"), actions ("sacrifice a creature", "+1/+1 counter", "create a
+token", "draw"), the types it cares about, and keywords. **(3) Map** each element to a Scryfall handle —
+curated **Tagger tags** `function:`/`otag:` for roles (`otag:sacrifice-outlet`, `function:card-advantage`,
+`otag:token-maker`), `o:"…"` for specific phrases, `t:…` for types, `keyword:…` for keywords. **(4) Search**
+each within the commander's identity and **intersect** — cards appearing under several handles are the
+multi-synergy hits. **(5) Score** each candidate by its points of contact and keep the densest.
+
+A good test of the result: *could this deck win without ever casting the commander?* If yes, the 99 are
+pulling their weight. Source candidates **primarily from EDHREC and mtgdecks.net** (EDHREC's high-"synergy"
+ranking is exactly this signal), then use **Scryfall to fill gaps** and surface spicy multi-synergy cards the
+aggregate buries. Gather ~40 themed candidates; you'll cut later. Apply the mana-value rubric in
+`references/methodology.md` as a first filter (expensive cards must earn their slot).
 
 **Check in on the direction here.** Before sinking time into the full build, tell the user the plan in a
 couple of sentences — the theme/engine you're leaning into, how the deck intends to win, and a handful of
@@ -177,7 +190,20 @@ a clear, repeatable path to victory.
 counts, how it wins, the priciest cards, and any close calls you made (the "I kept X over Y because…"
 choices) — and invite changes: pet cards to slot in, cards to cut, more or less power, a tighter budget.
 Make the swaps they ask for (re-checking the category counts and budget each time) and keep going until
-they're happy. **Only then** run the quality checks below and write the two files.
+they're happy. **Only then** run the quality checks below, rank the deck (Step 9), and write the two files.
+
+### Step 9 — Rank the finished deck (★ rating)
+Once the list is locked, **rate it before writing files** and embed the result in `deck.md`. Run
+`python "${CLAUDE_SKILL_DIR}/scripts/analyze_deck.py" <import>.txt --commander "<name>" --json` on the final
+list to pull the objective stats (curve, land/ramp/draw/interaction counts you can reconcile against your
+build, the **EDHREC-rank staple signal**, Game Changer count, off-identity check, total EUR), then apply the
+**five-dimension rubric in `references/rating.md`** — structure & consistency, synergy density (via
+`references/synergy.md`), staples & card quality, win conditions, and bracket calibration — to award an
+overall ★ rating *at the target bracket*. This is the same method as the dedicated **mtg-edh-analyze** skill;
+defer to it if you prefer. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★★☆ (4/5) — a
+strong Bracket 3 deck`), the per-dimension scorecard with the numbers behind each, and one line on the
+deck's biggest remaining weakness. Since you built to the bracket, a healthy build should rate well — if it
+doesn't, fix the flagged gap before delivering rather than shipping a low score.
 
 ## How to drive the data sources
 
@@ -275,3 +301,6 @@ restrictions — see `references/brackets.md`); within budget if a cap was set. 
 **Double-check colors:** confirm every card's color identity is within the commander's — vet with
 `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and glance at the search
 **CI** column for each card. A single off-identity pip makes the card illegal in the deck.
+
+**Include the rating:** `deck.md` must carry the **Deck Rating** section from Step 9 — the overall ★ rating
+at the bracket and the per-dimension scorecard. Don't deliver a deck without it.

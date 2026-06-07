@@ -17,6 +17,16 @@ A Claude Code plugin bundling **Magic: The Gathering** skills.
 - **[mtg-std-upgrade](skills/mtg-std-upgrade/SKILL.md)** — improves an
   **existing** Arena Standard deck you paste in: diagnoses curve, mana, and meta matchups and
   recommends swaps, built from cards you already own and costed in a (usually low) wildcard tier.
+- **[mtg-card-finder](skills/mtg-card-finder/SKILL.md)** — a consultative **card finder & deck
+  problem-solver**: brainstorms with you to pin down what you actually need (a commander to build
+  around, a gap to fill, a category to deepen, synergy pieces, or the fix for a problem your deck
+  keeps hitting), then researches Scryfall Oracle text and typings deeply to surface cohesive,
+  high-synergy picks — priced in EUR. Finds cards, not whole decks.
+- **[mtg-edh-analyze](skills/mtg-edh-analyze/SKILL.md)** — **star-rates an existing Commander deck**
+  against a target bracket: measures land count, curve, ramp/draw/interaction density, the EDHREC-rank
+  staple signal, Game Changer count, and color legality via the local database, reads Oracle text to
+  score synergy, and returns an overall ★ rating with a per-dimension scorecard, the deck's actual
+  bracket, and the highest-impact fixes (handing off to mtg-edh-upgrade to apply them).
 
 ## Install
 

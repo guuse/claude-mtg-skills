@@ -86,7 +86,10 @@ See "The `.mtg` workspace" below.
    card name, mana value, a one-line reason, and Cardmarket EUR price. Include category counts, total deck
    value, and the target bracket. **Open with a "Changes" section** that is the heart of an upgrade: each
    change as **— Cut `<card>` → Add `<card>` (reason; €X)**, grouped by the weakness it fixes, plus the
-   **total upgrade spend vs the budget cap** and a short "what these changes do" paragraph.
+   **total upgrade spend vs the budget cap** and a short "what these changes do" paragraph. Close with a
+   **Deck Rating** section — an overall ★ rating (out of 5) at the target bracket plus the per-dimension
+   scorecard, ideally **before vs. after** so the user sees how much the upgrade moved the needle (see
+   "Step 6 — Rank the upgraded deck").
 2. **A plain importable list** (`import.txt`) — the upgraded 100 as `1 Card Name`, commander on its own
    first line, ready to paste into Moxfield / Archidekt / mtggoldfish. Generate it *from* the upgraded
    annotated list so they can't drift.
@@ -140,8 +143,10 @@ pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
 ## The method (diagnose, then upgrade)
 
 The target shape of a functioning 100 and the reasoning behind every number live in
-`references/methodology.md` — read it before diagnosing. The Scryfall query cookbook for finding upgrade
-candidates is in `references/scryfall-syntax.md`. Work in this order:
+`references/methodology.md` — read it before diagnosing. The **synergy-scoring loop** for choosing adds
+(read → extract → map to tags → intersect → score, with the ≥2–3-points-of-contact rule) is in
+`references/synergy.md` — read it too. The Scryfall query cookbook for finding upgrade candidates is in
+`references/scryfall-syntax.md`. Work in this order:
 
 ### Step 1 — Diagnose the current list, then talk it through with the user
 Tally the existing deck and compare it to the methodology's targets: ~37–38 lands, **12+ net-positive**
@@ -158,8 +163,17 @@ swaps until you and the user are aligned on what this upgrade is actually for.
 For each gap, gather candidates **primarily from EDHREC and mtgdecks.net** for this commander (what proven
 lists run that this deck lacks), then fill with **Scryfall** for budget- and bracket-appropriate options
 (`references/scryfall-syntax.md`). Favor cards that fix a real weakness *and* synergize with the existing
-theme. Cheaper-but-sufficient beats expensive-but-marginal — the goal is the most improvement within the
-cap.
+theme. Cheaper-but-sufficient beats expensive-but-marginal — the goal is the most improvement within the cap.
+
+**Hold every *themed* add to the synergy bar in `references/synergy.md` (read it):** each must share at least
+**2–3 points of contact** with the commander and the rest of the deck — more is better. Run the loop on the
+existing deck's vocabulary: **read** the commander's Oracle text, **extract** its key elements, **map** each
+to a Scryfall handle (curated `function:`/`otag:` Tagger tags first — `otag:sacrifice-outlet`,
+`function:card-advantage`, `otag:token-maker` — then `o:"…"`, `t:…`, `keyword:…`), **search and intersect**,
+and **score** candidates by points of contact, taking the densest. A swap that drops a one-note card for a
+card pulling 2–3 jobs is exactly the kind of high-impact upgrade this skill is for. (Structural fixes —
+lands, generic ramp, catch-all interaction — fill required roles and are exempt, but prefer the version that
+also synergizes.)
 
 ### Step 3 — Choose the swaps (what to cut)
 For every add, name the **cut**: the weakest card serving the same or a lower-priority role (off-theme
@@ -179,7 +193,19 @@ priority (e.g. "first, the mana base", then "card advantage"), each as **Cut →
 running spend. Invite them to veto, ask why, suggest their own cards, or push for cheaper/spicier options,
 and **adjust accordingly**. Where there's a real choice, offer 2–3 options rather than dictating one. Keep
 going until the user is happy with the full set of changes. **Only then** assemble the final 100, run the
-quality checks below, and write the two files.
+quality checks below, rank the deck (Step 6), and write the two files.
+
+### Step 6 — Rank the upgraded deck (★ rating)
+Before writing files, **rate the final list** and embed the result in `deck.md`. Run
+`python "${CLAUDE_SKILL_DIR}/scripts/analyze_deck.py" <import>.txt --commander "<name>" --json` to pull the
+objective stats (curve, category counts, **EDHREC-rank staple signal**, Game Changer count, off-identity
+check, total EUR), then apply the **five-dimension rubric in `references/rating.md`** — structure &
+consistency, synergy density (via `references/synergy.md`), staples & card quality, win conditions, and
+bracket calibration — for an overall ★ rating *at the target bracket*. This is the same method as the
+dedicated **mtg-edh-analyze** skill. Write a **Deck Rating** section into `deck.md` and, because this is an
+upgrade, show it as **before → after** when you can (rate the pasted starting list too) so the changes'
+impact on the score is visible. If the rating reveals the upgrade didn't move the deck's biggest weakness,
+say so and propose the next swap rather than shipping it quietly.
 
 ## How to drive the data sources
 
@@ -220,4 +246,6 @@ first.
   `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and check the search **CI**
   column. One off-identity pip makes a card illegal in the deck.
 - **Real improvement:** the changes measurably move the deck toward the target shape (the gaps from Step 1
-  are smaller), and each swap has a clear reason. Only then present the files.
+  are smaller), and each swap has a clear reason.
+- **Rating included:** `deck.md` carries the **Deck Rating** section from Step 6 (overall ★ at the bracket +
+  scorecard, before→after where possible). Only then present the files.

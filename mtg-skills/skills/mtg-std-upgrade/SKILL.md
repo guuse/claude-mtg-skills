@@ -101,7 +101,9 @@ See "The `.mtg` workspace" below.
    / rares / mythics the user must craft vs the tier cap, owned cards excluded), the match type, and the
    meta plan. **Open with a "Changes" section** — each change as **— Cut `<card>` → Add `<card>` (rarity;
    reason; "owned" or "craft 1 R")**, grouped by the problem it fixes, plus the **total wildcards to craft
-   vs the tier**.
+   vs the tier**. Close with a **Deck Rating** section — an overall ★ rating (out of 5) for the deck on the
+   current ladder at its tier, plus the per-dimension scorecard, ideally **before → after** so the upgrade's
+   impact on the score is visible (see "Step 6 — Rank the upgraded deck").
 2. **An Arena import list** (`arena.txt`) — exact MTG Arena import format: a `Deck` header, then
    `<count> <Card Name>` per line; a blank line then `Sideboard` and 15 cards if BO3. Generate it *from* the
    upgraded annotated list so they can't drift.
@@ -155,8 +157,10 @@ pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
 
 ## The method (diagnose, then upgrade)
 
-Full reasoning is in `references/methodology.md`; the Scryfall recipes are in `references/scryfall-syntax.md`;
-the tier/wildcard logic is in `references/wildcard-budget.md`. Work in this order:
+Full reasoning is in `references/methodology.md`; the **synergy-scoring loop** for choosing payoff/synergy
+adds (read → extract → map to Scryfall tags → intersect → score, ≥2–3 points of contact) is in
+`references/synergy.md`; the Scryfall recipes are in `references/scryfall-syntax.md`; the tier/wildcard logic
+is in `references/wildcard-budget.md`. Work in this order:
 
 ### Step 1 — Diagnose the current list, then talk it through with the user
 Read the deck for the things that lose games: **rotated/illegal cards**, an inconsistent or wrong-speed
@@ -178,6 +182,12 @@ For each problem, gather candidate fixes from the meta sites and Scryfall (`refe
 nothing. Reach for un-owned cards when they're clearly better and worth a wildcard. Favor cheaper-by-rarity
 cards that do most of the job (a common/uncommon answer over a premium rare when close).
 
+When the add is a **payoff/synergy** card (not a structural answer or mana fix), run the synergy-scoring loop
+from `references/synergy.md`: map the deck's centerpiece axes to Scryfall handles (`function:`/`otag:` tags,
+`o:"…"`, `t:…`, `keyword:…`), intersect, and prefer cards giving a **2-for-1 with the plan and 2–3 points of
+contact** with the rest of the deck. Structural fixes (lands, removal, sweepers, meta-tech) are exempt from
+the rule, but prefer the version that also synergizes.
+
 ### Step 4 — Choose the swaps and fit the tier
 For every add, name the **cut** (the weakest card in the same or a lower-priority role). Keep the deck at
 exactly **60** (+15 sideboard for BO3), max 4 of any non-basic card. Compute the **wildcard cost of the
@@ -191,7 +201,19 @@ priority (e.g. "first, the mana base", then "the aggro matchup"), each as **Cut 
 owned/craft cost**, with the running wildcard tally. Invite them to veto, ask why, suggest their own cards,
 or trade power for fewer wildcards, and **adjust accordingly**. Where there's a real choice, offer 2–3
 options rather than dictating one. Keep going until the user is happy with the full set of changes. **Only
-then** assemble the final 60 (+sideboard), run the quality checks below, and write the two files.
+then** assemble the final 60 (+sideboard), run the quality checks below, rank the deck (Step 6), and write
+the two files.
+
+### Step 6 — Rank the upgraded deck (★ rating)
+Before writing files, **rate the final list** and embed the result in `deck.md`. Apply the **five-dimension
+rubric in `references/rating.md`** — consistency & curve, mana base, synergy/payoff density (via
+`references/synergy.md`), meta resilience, and wildcard efficiency — rating the deck *for the current ladder
+at its tier and match type*. Use the data you already have: curve and land count, the `--deck --tier`
+wildcard tally, the `--colors` audit, and the meta read from Step 2. Write a **Deck Rating** section into
+`deck.md` and, because this is an upgrade, show it as **before → after** when you can (rate the pasted
+starting list too) so the changes' impact on the score is visible. If the rating shows the upgrade left the
+deck's biggest weakness (e.g. still soft to the top aggro deck) unfixed, say so and propose the next swap
+rather than shipping it quietly.
 
 ## Data sources
 
@@ -236,4 +258,6 @@ legality are used). `function:`/`otag:` (Tagger) queries route to the live API a
   tier's caps, or the user okayed an overage; commons/uncommons reported as soft. Show the breakdown of the
   *changes*.
 - **Real improvement:** the swaps fix the Step 1 problems and improve the worst matchups, the mana base
-  matches the deck's speed, and each change has a clear reason. Only then present the files.
+  matches the deck's speed, and each change has a clear reason.
+- **Rating included:** `deck.md` carries the **Deck Rating** section from Step 6 (overall ★ for the ladder at
+  its tier + scorecard, before→after where possible). Only then present the files.

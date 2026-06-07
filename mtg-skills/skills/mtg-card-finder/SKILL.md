@@ -45,8 +45,9 @@ asking a sharp question over assuming.
 
 Work through these phases in order. Phases 1–2 (purpose + brainstorm) are what make the recommendations
 *theirs*; Phase 3 (deep card research) is what makes them *good*. Full detail and the diagnostic playbook
-live in `references/methodology.md` — **read it before recommending anything.** The Scryfall query cookbook
-is in `references/scryfall-syntax.md`.
+live in `references/methodology.md` — **read it before recommending anything** — and the synergy-scoring
+loop that decides which cards make the cut is in `references/synergy.md` (**read this too; it is the core
+craft**). The Scryfall query cookbook is in `references/scryfall-syntax.md`.
 
 ### Phase 1 — Establish the purpose
 
@@ -108,31 +109,42 @@ repeatable card advantage that survives a board reset"* — and get the user to 
 read differs from their opening request, **say so and explain why**, and let them decide. Only search once
 you both agree on what you're actually looking for.
 
-### Phase 3 — Research the card pool deeply
+### Phase 3 — Research the card pool deeply (synergy scoring)
 
-This is the skill's craft. With the need pinned down, search broadly and **read the wording closely.**
+This is the skill's craft, and it follows one disciplined loop — **read → extract → map → search →
+intersect → score** — documented in full in `references/synergy.md`. **Read that file; it is the heart of
+this skill.** The non-negotiable rule it enforces: **every card you recommend must share at least 2–3
+synergies ("points of contact") with the deck/commander and ideally with the other cards — and the more
+points of contact, the better.** Rank candidates by synergy count and take the densest.
 
-- **Decompose the need into search terms.** For synergy/gap/category work, break the commander's and the
-  deck's key cards into **keywords and type interactions** ("enters", "attacks", "creature dies", "+1/+1
-  counter", "artifact", "leaves the battlefield", "sacrifice", "draw a card", "lands"). Each becomes a query.
-  For category/problem work, translate the need into mechanics (e.g. "refuel after a wipe" → repeatable draw
-  engines, recursion, cards that draw on a board state you'll still have post-wipe).
-- **Source proven inclusions first, then fill.** For Commander, start from **EDHREC** (top and high-synergy
-  cards for the commander/theme) and **mtgdecks.net** (full lists) to see what real decks run, then use
-  **Scryfall** to fill the gaps those miss, surface budget/bracket alternatives, and dig up spicy
-  multi-synergy cards the aggregate buries. For Standard/other formats, lean on Scryfall plus current meta
-  sources.
-- **Read the Oracle text and type line of every serious candidate** — not just the name. The point is to
-  catch the cards whose *wording* makes them quietly perfect (a removal spell that also draws; a ramp piece
-  that's also a sac outlet; a creature whose type fills a tribal slot *and* whose text triggers your engine).
-  Use `--named` to pull exact text when a card looks promising.
-- **Hunt for cohesion: multiple overlapping points of contact.** Rank candidates by how many ways they touch
-  the deck and each other. A card that hits three of the deck's keywords and shares a type the deck cares
-  about beats a strictly "more powerful" card that's an island. Note the *combinations* you spot — the
-  emergent interactions are often the best part of the recommendation.
-- **Vet color identity and legality as you go.** Use `id<=<identity>` (NOT `c:`, which matches off-identity
-  multicolor cards) and glance at the **CI** column; one off-identity pip makes a card illegal in a Commander
-  deck. Respect format legality for the format in question.
+1. **Read the card (this is the irreplaceable, Claude-only step).** Pull the **exact Oracle text and type
+   line** of the commander/centerpiece and every serious candidate (`--named "Card Name"`). *You* interpret
+   what the card actually does — a tag search can't decide what matters; it only finds what you tell it to.
+2. **Extract the key elements** — every actionable concept the card produces or rewards: triggers (*enters,
+   attacks, a creature dies, landfall, lifegain*), actions (*sacrifice, create a token, +1/+1 counter, draw,
+   blink, recur*), the **types/subtypes** it cares about, **keywords**, and numeric axes. This list is the
+   deck's **synergy vocabulary** / shopping list.
+3. **Map each element to a Scryfall handle.** Prefer the most specific that exists: curated **Tagger tags**
+   `function:` / `otag:` for well-known roles (`otag:sacrifice-outlet`, `function:card-advantage`,
+   `otag:token-maker`, `function:ramp`, `otag:flicker`); **oracle text** `o:"…"` for specific phrases;
+   **types** `t:…`; **keywords** `keyword:…`. Tags are curated to catch a *role* across different wordings —
+   the fast path — and route to the live API automatically; when a tag is thin, union it with the `o:"…"`
+   phrasing. (See the mapping table in `references/synergy.md`.)
+4. **Search each element within the color identity, then INTERSECT.** Combine handles in one query
+   (`id<=BG (o:"whenever a creature" o:"dies") function:card-advantage`) or run them separately and
+   cross-reference recurring names. The cards that appear in *several* pools at once are the multi-synergy
+   finds — exactly what this skill exists to surface.
+5. **Score by points of contact and apply the ≥2–3 floor.** +1 per vocabulary element a card hits, +1 per
+   *other* card it specifically combos with. Drop anything scoring below 2–3 (it's a "good card", not an
+   engine card). For problem/category work, translate the *cause* into mechanics first (e.g. "refuel after a
+   wipe" → repeatable draw / recursion / draw that triggers off something surviving the wipe), then score the
+   same way.
+
+**Source proven inclusions first, then fill:** for Commander, start from **EDHREC** (its high-"synergy"
+ranking is gold here) and **mtgdecks.net**, then use **Scryfall** to fill gaps and dig up spicy multi-synergy
+cards the aggregate buries; for other formats, lean on Scryfall plus current meta sources. **Vet color
+identity and legality as you go** — `id<=<identity>` (NOT `c:`, which matches off-identity multicolor cards),
+glance at the **CI** column; one off-identity pip makes a card illegal in a Commander deck.
 
 ### Phase 4 — Present a shortlist with reasoning, then refine
 
@@ -208,8 +220,9 @@ of preference:
 
 - **The recommendations target the *diagnosed* need**, not just the literal opening request — and if those
   differ, you said so and the user agreed on the direction.
-- **Every card's reason names a concrete synergy or fix** drawn from its actual Oracle text / type line — no
-  vague "it's a good card". You read the wording.
+- **Every recommended card clears the ≥2–3 synergy floor** (except pure structural utility — lands/ramp/
+  catch-all removal), and its reason **names the specific points of contact** it hits, drawn from its actual
+  Oracle text / type line — no vague "it's a good card". You read the wording and counted the contacts.
 - **Color identity & legality check out** for every pick (vet with `id<=`, glance at the **CI** column; one
   off-identity pip makes a card illegal in a Commander deck), and prices are shown (Cardmarket EUR; note
   `null` prices rather than guessing).

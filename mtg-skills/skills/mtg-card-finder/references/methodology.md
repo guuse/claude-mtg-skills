@@ -95,7 +95,12 @@ vs. stated request — is the most valuable thing the skill does.
 
 ## Part 3 — Research the card pool deeply (Phase 3)
 
-This is the craft. Two principles: **read the wording**, and **rank by cohesion**.
+This is the craft. Two principles: **read the wording**, and **rank by cohesion**. The exact loop —
+**read → extract → map to Scryfall tags → search → intersect → score**, with the hard **≥2–3 points of
+contact per card** rule — lives in `references/synergy.md`; this section is how it plays out in a
+finding session. **Map each extracted element to a Scryfall handle** (curated `function:`/`otag:` Tagger
+tags first, then `o:"…"` oracle text, `t:…` types, `keyword:…`) and intersect the results — cards that
+surface under several handles are the multi-synergy finds.
 
 ### Decompose the need into queries
 

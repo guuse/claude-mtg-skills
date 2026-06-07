@@ -33,22 +33,33 @@ Always pull the commander's real Oracle text (Scryfall `--named`) so Step 2 work
 
 ## Step 2 — Find the themed cards (the synergy engine)
 
-This is where decks are won or lost. The method:
+This is where decks are won or lost. It runs through the **synergy-scoring loop in `references/synergy.md`**
+(read → extract → map to Scryfall tags → search → intersect → score), which enforces the rule that **every
+themed card share at least 2–3 points of contact** with the commander and the rest of the deck. The method
+below is that loop applied to a build:
 
-**A. Break the commander into keywords.** Read each ability and extract every actionable concept. Example
-— a commander that says *"Whenever this enters or attacks, you may sacrifice another creature or artifact;
-if you do, put two +1/+1 counters on it,"* and *"When it leaves the battlefield, put its counters on
-target creature you control,"* yields keywords: **enters, attacks, sacrifice creature, sacrifice artifact,
-+1/+1 counters, leaves the battlefield, counters, target creature you control.** That's the shopping list.
+**A. Break the commander into keywords (extract its vocabulary).** Read each ability and extract every
+actionable concept. Example — a commander that says *"Whenever this enters or attacks, you may sacrifice
+another creature or artifact; if you do, put two +1/+1 counters on it,"* and *"When it leaves the
+battlefield, put its counters on target creature you control,"* yields keywords: **enters, attacks,
+sacrifice creature, sacrifice artifact, +1/+1 counters, leaves the battlefield, counters, target creature
+you control.** That's the shopping list. **Map each to a Scryfall handle** — a curated Tagger tag
+(`otag:sacrifice-outlet`, `otag:token-maker`, `function:card-advantage`) where one fits, otherwise `o:"…"`
+oracle text, `t:…` types, or `keyword:…` — so each keyword becomes a real query.
 
-**B. Hunt for multiple overlapping synergies.** Don't add a card because it hits *one* keyword — thousands
-do. Add cards that hit **several** and that also play well with other cards you're adding. The more points
-of contact a card has with the deck, the more often it does something great, and the more the deck "comes
-alive" with emergent interactions. This is also what makes each game different and fun.
+**B. Hunt for multiple overlapping synergies (intersect and score).** Don't add a card because it hits *one*
+keyword — thousands do. Add cards that hit **several** and that also play well with other cards you're
+adding. Search each handle and **intersect**: a card surfacing under multiple handles has multiple synergies.
+Score each by its **points of contact** (+1 per vocabulary element it hits, +1 per other card it specifically
+combos with) and **keep only those scoring ≥ 2–3**, densest first. The more points of contact a card has, the
+more often it does something great, and the more the deck "comes alive" with emergent interactions.
 
   *Example of multi-synergy:* an enchantment that (a) flickers a creature when it enters, (b) tracks your
   creatures entering with counters, and (c) periodically exiles-and-returns one of your creatures hits
   *enters*, *leaves the battlefield*, and re-trigger-your-ETB all at once — three points of contact.
+
+  *(Structural slots — lands, generic ramp, catch-all interaction — fill required roles and are exempt from
+  the 2–3 rule, but prefer the version that also synergizes; see `references/synergy.md`.)*
 
 **C. Source proven cards first, then fill.** Per the user's preference: start from **EDHREC** (top cards
 and high-"synergy" cards for this commander) and **mtgdecks.net** (full sample lists). These reflect what
@@ -185,6 +196,8 @@ threat plus a counter-doubler, a mill/overrun payoff, or a combo the bracket all
 - [ ] **~10–11** ramp pieces + a few explosive; efficient curve.
 - [ ] **~10** dedicated interaction + **2–4** board wipes.
 - [ ] **3–4** genuine win conditions.
+- [ ] Every **themed/synergy** card clears **≥2–3 points of contact** (structural utility exempt) — see
+      `references/synergy.md`.
 - [ ] Every card inside the commander's **color identity**.
 - [ ] **Bracket** rules satisfied (Game Changer count, combo/MLD limits — see `brackets.md`).
 - [ ] Within **budget** if a cap was set; total price shown.

@@ -155,8 +155,10 @@ pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
 
 ## The method (diagnose, then upgrade)
 
-Full reasoning is in `references/methodology.md`; the Scryfall recipes are in `references/scryfall-syntax.md`;
-the tier/wildcard logic is in `references/wildcard-budget.md`. Work in this order:
+Full reasoning is in `references/methodology.md`; the **synergy-scoring loop** for choosing payoff/synergy
+adds (read → extract → map to Scryfall tags → intersect → score, ≥2–3 points of contact) is in
+`references/synergy.md`; the Scryfall recipes are in `references/scryfall-syntax.md`; the tier/wildcard logic
+is in `references/wildcard-budget.md`. Work in this order:
 
 ### Step 1 — Diagnose the current list, then talk it through with the user
 Read the deck for the things that lose games: **rotated/illegal cards**, an inconsistent or wrong-speed
@@ -177,6 +179,12 @@ For each problem, gather candidate fixes from the meta sites and Scryfall (`refe
 **Scan the collection first** — an owned card that fixes the problem is the best upgrade because it costs
 nothing. Reach for un-owned cards when they're clearly better and worth a wildcard. Favor cheaper-by-rarity
 cards that do most of the job (a common/uncommon answer over a premium rare when close).
+
+When the add is a **payoff/synergy** card (not a structural answer or mana fix), run the synergy-scoring loop
+from `references/synergy.md`: map the deck's centerpiece axes to Scryfall handles (`function:`/`otag:` tags,
+`o:"…"`, `t:…`, `keyword:…`), intersect, and prefer cards giving a **2-for-1 with the plan and 2–3 points of
+contact** with the rest of the deck. Structural fixes (lands, removal, sweepers, meta-tech) are exempt from
+the rule, but prefer the version that also synergizes.
 
 ### Step 4 — Choose the swaps and fit the tier
 For every add, name the **cut** (the weakest card in the same or a lower-priority role). Keep the deck at

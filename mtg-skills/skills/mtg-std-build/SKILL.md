@@ -134,7 +134,9 @@ inventory for all steps below.
 ## The method (centerpiece-first brewing)
 
 Full detail and the reasoning behind each step is in `references/methodology.md` — read it before building.
-The Scryfall recipes for finding cards are in `references/scryfall-syntax.md`. The short version:
+The **synergy-scoring loop** behind Steps 2–3 (read → extract → map to tags → intersect → score, holding the
+payoff core to ≥2–3 points of contact) is in `references/synergy.md` — read it too. The Scryfall recipes for
+finding cards are in `references/scryfall-syntax.md`. The short version:
 
 **Build from the collection first, then upgrade.** When a collection is loaded, work owned-cards-out:
 for every slot in every step below, first look in the collection for the best card the user already
@@ -164,12 +166,20 @@ come from the non-obvious ones. Enumerate them:
   trigger). These "breaks" are where original decks come from.
 
 ### Step 3 — Build the synergy web
-Find cards that give **2-for-1s** with the centerpiece along the axes you listed, and that synergize with
-*each other*. Hunt for the non-obvious interaction that speeds the deck up "tenfold." Use EDHREC-style
+Run the **synergy-scoring loop in `references/synergy.md` (read it):** for each axis you listed in Step 2,
+**map it to a Scryfall handle** — a curated Tagger tag (`function:`/`otag:`) where one fits, otherwise
+`o:"…"` oracle text, `t:…` types, or `keyword:…` — **search, intersect, and score** candidates by their
+points of contact. The bar for the deck's **payoff/synergy core**: each such card should give a real
+**2-for-1** with the centerpiece *and* play with the other pieces — aim for **2–3 points of contact**, more
+is better. Hunt for the non-obvious interaction that speeds the deck up "tenfold." Use EDHREC-style
 aggregators sparingly here (this is Standard, not EDH) — lean on the meta sites and Scryfall oracle-text
-searches (`references/scryfall-syntax.md`). **With a collection loaded, scan it first** for cards that
-fill each axis and build from those; reach into the wider pool only to upgrade an owned piece or to fill
-a synergy slot the collection can't cover.
+searches (`references/scryfall-syntax.md`). **With a collection loaded, scan it first** for cards that fill
+each axis and build from those; reach into the wider pool only to upgrade an owned piece or to fill a synergy
+slot the collection can't cover.
+
+(Standard leans on more pure-efficiency cards and meta answers than EDH, so the **structural slots** — lands,
+removal, sweepers, meta-tech — are exempt from the 2–3 rule per `references/synergy.md`; hold the
+*payoff/synergy* core to it.)
 
 **Check in on the direction here.** Before building the full 60, tell the user the plan in a couple of
 sentences — the centerpiece and the axis you're leaning into, how the deck wins, and a few signature cards

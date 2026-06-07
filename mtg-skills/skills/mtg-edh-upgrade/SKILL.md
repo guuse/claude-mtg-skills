@@ -140,8 +140,10 @@ pushed later. To set syncing up for the first time, use the **mtg-sync** skill.
 ## The method (diagnose, then upgrade)
 
 The target shape of a functioning 100 and the reasoning behind every number live in
-`references/methodology.md` — read it before diagnosing. The Scryfall query cookbook for finding upgrade
-candidates is in `references/scryfall-syntax.md`. Work in this order:
+`references/methodology.md` — read it before diagnosing. The **synergy-scoring loop** for choosing adds
+(read → extract → map to tags → intersect → score, with the ≥2–3-points-of-contact rule) is in
+`references/synergy.md` — read it too. The Scryfall query cookbook for finding upgrade candidates is in
+`references/scryfall-syntax.md`. Work in this order:
 
 ### Step 1 — Diagnose the current list, then talk it through with the user
 Tally the existing deck and compare it to the methodology's targets: ~37–38 lands, **12+ net-positive**
@@ -158,8 +160,17 @@ swaps until you and the user are aligned on what this upgrade is actually for.
 For each gap, gather candidates **primarily from EDHREC and mtgdecks.net** for this commander (what proven
 lists run that this deck lacks), then fill with **Scryfall** for budget- and bracket-appropriate options
 (`references/scryfall-syntax.md`). Favor cards that fix a real weakness *and* synergize with the existing
-theme. Cheaper-but-sufficient beats expensive-but-marginal — the goal is the most improvement within the
-cap.
+theme. Cheaper-but-sufficient beats expensive-but-marginal — the goal is the most improvement within the cap.
+
+**Hold every *themed* add to the synergy bar in `references/synergy.md` (read it):** each must share at least
+**2–3 points of contact** with the commander and the rest of the deck — more is better. Run the loop on the
+existing deck's vocabulary: **read** the commander's Oracle text, **extract** its key elements, **map** each
+to a Scryfall handle (curated `function:`/`otag:` Tagger tags first — `otag:sacrifice-outlet`,
+`function:card-advantage`, `otag:token-maker` — then `o:"…"`, `t:…`, `keyword:…`), **search and intersect**,
+and **score** candidates by points of contact, taking the densest. A swap that drops a one-note card for a
+card pulling 2–3 jobs is exactly the kind of high-impact upgrade this skill is for. (Structural fixes —
+lands, generic ramp, catch-all interaction — fill required roles and are exempt, but prefer the version that
+also synergizes.)
 
 ### Step 3 — Choose the swaps (what to cut)
 For every add, name the **cut**: the weakest card serving the same or a lower-priority role (off-theme

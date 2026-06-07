@@ -36,7 +36,9 @@ Always produce **two files** at the end (the user expects both):
 1. **An annotated decklist** (`<commander>-deck.md`) — cards grouped by role (Commander, Lands, Ramp,
    Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing the card name, mana
    value, a one-line reason it's in the deck, and its Cardmarket price in EUR. Include the category
-   counts, the total deck price, the target bracket, and a short "how the deck wins" paragraph.
+   counts, the total deck price, the target bracket, a short "how the deck wins" paragraph, and a
+   **Deck Rating** section — an overall ★ rating (out of 5) for the deck at its bracket plus the
+   per-dimension scorecard (see "Step 9 — Rank the finished deck").
 2. **A plain importable list** (`<commander>-import.txt`) — one card per line as `1 Card Name`, ready to
    paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
@@ -188,7 +190,20 @@ a clear, repeatable path to victory.
 counts, how it wins, the priciest cards, and any close calls you made (the "I kept X over Y because…"
 choices) — and invite changes: pet cards to slot in, cards to cut, more or less power, a tighter budget.
 Make the swaps they ask for (re-checking the category counts and budget each time) and keep going until
-they're happy. **Only then** run the quality checks below and write the two files.
+they're happy. **Only then** run the quality checks below, rank the deck (Step 9), and write the two files.
+
+### Step 9 — Rank the finished deck (★ rating)
+Once the list is locked, **rate it before writing files** and embed the result in `deck.md`. Run
+`python "${CLAUDE_SKILL_DIR}/scripts/analyze_deck.py" <import>.txt --commander "<name>" --json` on the final
+list to pull the objective stats (curve, land/ramp/draw/interaction counts you can reconcile against your
+build, the **EDHREC-rank staple signal**, Game Changer count, off-identity check, total EUR), then apply the
+**five-dimension rubric in `references/rating.md`** — structure & consistency, synergy density (via
+`references/synergy.md`), staples & card quality, win conditions, and bracket calibration — to award an
+overall ★ rating *at the target bracket*. This is the same method as the dedicated **mtg-edh-analyze** skill;
+defer to it if you prefer. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★★☆ (4/5) — a
+strong Bracket 3 deck`), the per-dimension scorecard with the numbers behind each, and one line on the
+deck's biggest remaining weakness. Since you built to the bracket, a healthy build should rate well — if it
+doesn't, fix the flagged gap before delivering rather than shipping a low score.
 
 ## How to drive the data sources
 
@@ -286,3 +301,6 @@ restrictions — see `references/brackets.md`); within budget if a cap was set. 
 **Double-check colors:** confirm every card's color identity is within the commander's — vet with
 `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and glance at the search
 **CI** column for each card. A single off-identity pip makes the card illegal in the deck.
+
+**Include the rating:** `deck.md` must carry the **Deck Rating** section from Step 9 — the overall ★ rating
+at the bracket and the per-dimension scorecard. Don't deliver a deck without it.

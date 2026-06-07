@@ -42,7 +42,9 @@ Always produce **two files** (the user wants both):
    Creatures, Removal/Interaction, Card Advantage, Other Spells, Lands; plus Sideboard for BO3). Every
    line shows count, card name, **rarity (C/U/R/M)**, and a one-line reason. Include the mana curve, the
    land count, the **wildcard-cost breakdown** (commons/uncommons/rares/mythics required vs the tier cap),
-   the target tier, the match type (BO1/BO3), and a short "how the deck wins + meta plan" paragraph.
+   the target tier, the match type (BO1/BO3), a short "how the deck wins + meta plan" paragraph, and a
+   **Deck Rating** section — an overall ★ rating (out of 5) for the deck on the current ladder at its tier,
+   plus the per-dimension scorecard (see "Step 10 — Rank the finished deck").
 2. **Arena import list** (`arena.txt`) — exact MTG Arena import format: a `Deck` header, then
    `<count> <Card Name>` per line; a blank line then `Sideboard` and 15 cards if BO3. Generate this *from*
    the annotated list so they can't drift.
@@ -232,8 +234,19 @@ trim copies — lean on the meta knowledge so you cut the least important pieces
 the meta plan, the mana base, and the **wildcard cost / what they'd need to craft** — and call out any
 close calls. Invite changes: cards they own and want to use instead, a lower wildcard spend, a different
 answer for a matchup they care about. Make the swaps they ask for (re-checking the 60-card count, legality,
-and the tier each time) and keep going until they're happy. **Only then** run the quality checks below and
-write the two files.
+and the tier each time) and keep going until they're happy. **Only then** run the quality checks below, rank
+the deck (Step 10), and write the two files.
+
+### Step 10 — Rank the finished deck (★ rating)
+Once the list is locked, **rate it before writing files** and embed the result in `deck.md`. Apply the
+**five-dimension rubric in `references/rating.md`** — consistency & curve, mana base, synergy/payoff density
+(via `references/synergy.md`), meta resilience, and wildcard efficiency — rating the deck *for the current
+ladder at its tier and match type* (BO1/BO3). Use the data you already gathered: the curve and land count
+from Step 7, the wildcard tally from `--deck --tier`, the color audit from `--colors`, and the meta read from
+Steps 5–6. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★★☆ (4/5) — a strong Tier-3
+BO1 ladder deck`), the per-dimension scorecard with the numbers/reasons behind each, and one line on the
+deck's biggest remaining weakness. A healthy build should rate well — if a dimension scores low (e.g. soft to
+mono-red, or a mana base fighting the curve), fix it before delivering rather than shipping a low score.
 
 ## Data sources
 
@@ -289,5 +302,7 @@ the two files so nothing the user already has is mistakenly counted as a craft.
 - **Meta plan:** the deck has real answers for the top 2-3 ladder decks, and the mana base matches its
   speed. Curve and land count are sensible for the archetype.
 - Rarity is labeled on every card in the annotated list.
+- **Rating included:** `deck.md` carries the **Deck Rating** section from Step 10 (overall ★ for the ladder
+  at its tier + the per-dimension scorecard).
 
 Then present both files.

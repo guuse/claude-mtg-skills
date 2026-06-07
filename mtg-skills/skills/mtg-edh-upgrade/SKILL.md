@@ -86,7 +86,10 @@ See "The `.mtg` workspace" below.
    card name, mana value, a one-line reason, and Cardmarket EUR price. Include category counts, total deck
    value, and the target bracket. **Open with a "Changes" section** that is the heart of an upgrade: each
    change as **— Cut `<card>` → Add `<card>` (reason; €X)**, grouped by the weakness it fixes, plus the
-   **total upgrade spend vs the budget cap** and a short "what these changes do" paragraph.
+   **total upgrade spend vs the budget cap** and a short "what these changes do" paragraph. Close with a
+   **Deck Rating** section — an overall ★ rating (out of 5) at the target bracket plus the per-dimension
+   scorecard, ideally **before vs. after** so the user sees how much the upgrade moved the needle (see
+   "Step 6 — Rank the upgraded deck").
 2. **A plain importable list** (`import.txt`) — the upgraded 100 as `1 Card Name`, commander on its own
    first line, ready to paste into Moxfield / Archidekt / mtggoldfish. Generate it *from* the upgraded
    annotated list so they can't drift.
@@ -190,7 +193,19 @@ priority (e.g. "first, the mana base", then "card advantage"), each as **Cut →
 running spend. Invite them to veto, ask why, suggest their own cards, or push for cheaper/spicier options,
 and **adjust accordingly**. Where there's a real choice, offer 2–3 options rather than dictating one. Keep
 going until the user is happy with the full set of changes. **Only then** assemble the final 100, run the
-quality checks below, and write the two files.
+quality checks below, rank the deck (Step 6), and write the two files.
+
+### Step 6 — Rank the upgraded deck (★ rating)
+Before writing files, **rate the final list** and embed the result in `deck.md`. Run
+`python "${CLAUDE_SKILL_DIR}/scripts/analyze_deck.py" <import>.txt --commander "<name>" --json` to pull the
+objective stats (curve, category counts, **EDHREC-rank staple signal**, Game Changer count, off-identity
+check, total EUR), then apply the **five-dimension rubric in `references/rating.md`** — structure &
+consistency, synergy density (via `references/synergy.md`), staples & card quality, win conditions, and
+bracket calibration — for an overall ★ rating *at the target bracket*. This is the same method as the
+dedicated **mtg-edh-analyze** skill. Write a **Deck Rating** section into `deck.md` and, because this is an
+upgrade, show it as **before → after** when you can (rate the pasted starting list too) so the changes'
+impact on the score is visible. If the rating reveals the upgrade didn't move the deck's biggest weakness,
+say so and propose the next swap rather than shipping it quietly.
 
 ## How to drive the data sources
 
@@ -231,4 +246,6 @@ first.
   `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and check the search **CI**
   column. One off-identity pip makes a card illegal in the deck.
 - **Real improvement:** the changes measurably move the deck toward the target shape (the gaps from Step 1
-  are smaller), and each swap has a clear reason. Only then present the files.
+  are smaller), and each swap has a clear reason.
+- **Rating included:** `deck.md` carries the **Deck Rating** section from Step 6 (overall ★ at the bracket +
+  scorecard, before→after where possible). Only then present the files.

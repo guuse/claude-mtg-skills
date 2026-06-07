@@ -35,6 +35,7 @@ The repo is set up as a **Claude Code plugin marketplace**, so installing is a t
 | **mtg-edh-upgrade** | **Improves an existing Commander deck** you paste in. Diagnoses the list against the same 7-step methodology (land count, card advantage, ramp, interaction, curve, win cons), then recommends the highest-impact **swaps** within a budget — which, because it's an upgrade, can be far smaller than building from scratch. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, reasons, EUR cost) and a ready-to-import list. Color-identity- and bracket-aware. |
 | **mtg-std-upgrade** | **Improves an existing Arena Standard deck** you paste in. Diagnoses curve, mana base, consistency, and meta matchups, then recommends **swaps** built from cards you already own (via your collection export) and costed in a (usually low) wildcard tier. Outputs an upgraded annotated decklist with a **Changes** section (cut → add, rarity, owned/craft cost) and an Arena import list. BO1 / BO3. |
 | **mtg-card-finder** | A consultative **card finder & deck problem-solver** — for when you want the *right cards*, not a whole deck. It starts by pinning down the **purpose** (pick a commander, fill a gap, deepen a category like card advantage/ramp/removal, find synergy pieces, or solve a problem like "I can't close games"), then **brainstorms** tailored context with you — playstyle/gimmicks/colors for commanders, the deck and its real pain points for everything else — to pinpoint what you *actually* need rather than what you first asked for. It then researches **Oracle text and type lines exhaustively** via Scryfall (plus EDHREC/mtgdecks for proven picks), ranking candidates by **cohesion** (how many ways a card touches your deck and itself) to surface genuinely synergistic cards. Hands back a focused, priced (Cardmarket EUR) **shortlist with reasoning**, then refines it with you. Hands off to the build/upgrade skills when you want those cards turned into a list. |
+| **mtg-edh-analyze** | **Rates an existing Commander deck out of five stars** against a target power bracket. Paste your list and name a bracket (1–5); it measures the hard stats via the local Scryfall database — land count, mana curve, ramp/draw/interaction density, the **EDHREC-rank staple signal**, Game Changer count, color-identity legality, total EUR — and **reads every card's Oracle text** to score synergy density. Then it awards an overall **★ rating** with a transparent per-dimension scorecard (performance fundamentals, synergy, staples/card quality, win conditions, and bracket fit), tells you which **bracket the deck actually sits at** if it differs from the target, and names the highest-impact, cheapest-first fixes — offering to hand off to **mtg-edh-upgrade** to make them. Evaluates a deck; doesn't change it. |
 | **mtg-db** | Builds and refreshes the **local Scryfall card database** (`.mtg/database/cards.sqlite`) that the four deckbuilding skills read from instead of calling the Scryfall API on every query. Downloads Scryfall's "Default Cards" bulk file once, collapses it to one row per unique card (cheapest EUR/USD price, Arena availability, rarity, legalities, Game Changer flag, EDHREC rank), and stores it as SQLite — sharply cutting API calls and avoiding rate limits. You rarely run it directly: the deck skills **auto-build it on first use** and prompt you to refresh it when it's stale. |
 | **mtg-sync** | Keeps your **decks and collection in a private git repo** so the same data follows you across your Mac, another PC, and your phone. Sets syncing up the first time (clones your private `mtg-data` repo and scaffolds it), then **pulls before** and **pushes after** every deck build/upgrade — invoked automatically by the deck skills, the same way they rely on mtg-db for card data. Best-effort: if git or the network isn't available, it says so and the build proceeds with the local workspace. The rebuildable card database stays out of routine syncs, but can optionally be shared across machines via Git LFS (`--push-database` / `--pull-database`). See **[SYNCING.md](SYNCING.md)**. |
 
@@ -120,12 +121,18 @@ the **mtg-card-finder** skill brainstorms it with you:
 
 > Find me the best budget removal for a Golgari deck, and cards that synergize with +1/+1 counters.
 
+To **rate an existing Commander deck**, paste it and name a bracket — the **mtg-edh-analyze** skill scores
+it out of five stars and tells you what to fix:
+
+> Rate my deck out of 5 at Bracket 3, and tell me what bracket it actually is: \<paste decklist\>
+
 Claude confirms the few parameters it needs — power bracket and budget for Commander, or
 centerpiece/collection, wildcard tier, and BO1/BO3 for Arena Standard (upgrades just ask for a
 budget, usually a small one) — then works through the methodology and hands back two files: an
 annotated decklist and a ready-to-import list. You can also start a skill explicitly, e.g.
 `/mtg-skills:mtg-edh-build`, `/mtg-skills:mtg-std-build`,
-`/mtg-skills:mtg-edh-upgrade`, `/mtg-skills:mtg-std-upgrade`, or `/mtg-skills:mtg-card-finder`.
+`/mtg-skills:mtg-edh-upgrade`, `/mtg-skills:mtg-std-upgrade`, `/mtg-skills:mtg-card-finder`, or
+`/mtg-skills:mtg-edh-analyze`.
 
 ### Output & your collection
 

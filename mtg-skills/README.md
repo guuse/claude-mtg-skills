@@ -22,6 +22,11 @@ A Claude Code plugin bundling **Magic: The Gathering** skills.
   around, a gap to fill, a category to deepen, synergy pieces, or the fix for a problem your deck
   keeps hitting), then researches Scryfall Oracle text and typings deeply to surface cohesive,
   high-synergy picks — priced in EUR. Finds cards, not whole decks.
+- **[mtg-edh-analyze](skills/mtg-edh-analyze/SKILL.md)** — **star-rates an existing Commander deck**
+  against a target bracket: measures land count, curve, ramp/draw/interaction density, the EDHREC-rank
+  staple signal, Game Changer count, and color legality via the local database, reads Oracle text to
+  score synergy, and returns an overall ★ rating with a per-dimension scorecard, the deck's actual
+  bracket, and the highest-impact fixes (handing off to mtg-edh-upgrade to apply them).
 
 ## Install
 

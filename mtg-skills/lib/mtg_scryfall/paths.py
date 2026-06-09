@@ -2,7 +2,8 @@
 
 All skill file I/O lives under one workspace directory that holds three siblings:
 `database/` (the built `cards.sqlite` + `meta.json`), `decks/` (built decks), and
-`collection/` (the user's owned-card exports).
+`collection/` (the user's owned-card exports). Decks are split by format into
+`decks/std/<slug>/` (MTG Arena Standard) and `decks/edh/<slug>/` (Commander/EDH).
 
 How the workspace is resolved, in order:
 
@@ -69,9 +70,17 @@ def database_dir(mtg_dir=None, start=None):
     return os.path.join(_workspace(mtg_dir, start), "database")
 
 
-def decks_dir(mtg_dir=None, start=None):
-    """Return `<workspace>/decks`, creating nothing."""
-    return os.path.join(_workspace(mtg_dir, start), "decks")
+def decks_dir(mtg_dir=None, start=None, fmt=None):
+    """Return the decks directory, optionally for a specific format.
+
+    `fmt` is `"std"` or `"edh"` to get the per-format subfolder
+    (`<workspace>/decks/std` or `<workspace>/decks/edh`); omit it for the `decks/` root.
+    Creates nothing.
+    """
+    base = os.path.join(_workspace(mtg_dir, start), "decks")
+    if fmt:
+        return os.path.join(base, fmt)
+    return base
 
 
 def collection_dir(mtg_dir=None, start=None):
@@ -89,6 +98,23 @@ def meta_path_for(db_path):
     return os.path.join(os.path.dirname(db_path), META_FILENAME)
 
 
+def is_lfs_pointer(path):
+    """True if `path` is an unmaterialized Git LFS pointer rather than real content.
+
+    When the card database is synced via Git LFS (see sync.py / SYNCING.md) and a clone
+    lands on a machine without the git-lfs extension installed, the working file is a tiny
+    text stub beginning with the LFS spec URL — not the real SQLite bytes. Callers gate DB
+    use on this so a pointer is never opened as SQLite; they fall back to fetching (git lfs
+    pull) or rebuilding the database instead. A genuine `cards.sqlite` starts with the
+    "SQLite format 3" magic, so this only ever matches real pointer stubs.
+    """
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(64).startswith(b"version https://git-lfs.github.com/spec/")
+    except OSError:
+        return False
+
+
 def workspace_paths(start=None):
     """Resolve the full workspace layout, for tooling that needs to report it.
 
@@ -102,6 +128,8 @@ def workspace_paths(start=None):
         "home": root,
         "database": os.path.join(root, "database"),
         "decks": os.path.join(root, "decks"),
+        "decks_std": os.path.join(root, "decks", "std"),
+        "decks_edh": os.path.join(root, "decks", "edh"),
         "collection": os.path.join(root, "collection"),
         "db_file": db,
     }

@@ -2,8 +2,9 @@
 """sync.py — keep the MTG workspace (decks + collection) in a private git repo.
 
 Thin CLI over `mtg_scryfall.sync`. Operates on the resolved workspace ($MTG_HOME, else
-the nearest .mtg/). The card database lives there too but is git-ignored — only decks and
-collection sync. See the repo's SYNCING.md for the full cross-machine setup.
+the nearest .mtg/). Decks and collection sync on every build; the card database is
+git-ignored by default but can also be synced on demand via Git LFS (it's a >100 MB
+binary). See the repo's SYNCING.md for the full cross-machine setup.
 
 Modes:
   Bootstrap: python sync.py --bootstrap [--repo NAME|owner/NAME|URL] [--dest DIR] [--public]
@@ -15,6 +16,8 @@ Modes:
   Pull:      python sync.py --pull             # before a build: get the latest decks/collection
   Push:      python sync.py --push [-m "msg"]   # after a build: commit + push new decks
   Init:      python sync.py --init <repo-url> [--path DIR]   # clone an existing repo + scaffold
+  DB push:   python sync.py --push-database [-m "msg"]  # ship the built cards.sqlite via Git LFS
+  DB pull:   python sync.py --pull-database            # fetch the shared database instead of rebuilding
 
 Pull/push are best-effort: if git isn't installed, the workspace isn't a repo, or the network
 is down, the command says so and exits non-zero — the calling skill should report the note and
@@ -75,11 +78,14 @@ def _print_result(verb, res):
     """Render a pull/push result; return a shell exit code (0 ok/skipped, 1 failed)."""
     if res.get("skipped"):
         print(f"{verb}: skipped — {res['reason']}")
-        print("      (decks are safe locally; set up syncing when you can — see SYNCING.md)")
+        if "database" in verb:
+            print("      (the database is rebuildable locally with the mtg-db skill — see SYNCING.md)")
+        else:
+            print("      (decks are safe locally; set up syncing when you can — see SYNCING.md)")
         return 1
     if res.get("ok"):
         extra = ""
-        if verb == "push":
+        if verb.startswith("push"):
             extra = " (committed + pushed)" if res.get("committed") else " (already up to date)"
         msg = res.get("message") or "done"
         print(f"{verb}: ok{extra} — {msg}")
@@ -134,7 +140,11 @@ def main():
     g.add_argument("--pull", action="store_true", help="Pull latest decks/collection (before a build).")
     g.add_argument("--push", action="store_true", help="Commit + push new decks/collection (after a build).")
     g.add_argument("--init", metavar="REPO_URL", help="Clone an existing data repo and scaffold the layout.")
-    ap.add_argument("-m", "--message", help="Commit message for --push.")
+    g.add_argument("--push-database", dest="push_database", action="store_true",
+                   help="Commit + push the built card database (cards.sqlite + meta.json) via Git LFS.")
+    g.add_argument("--pull-database", dest="pull_database", action="store_true",
+                   help="Fetch the shared card database via Git LFS instead of rebuilding it.")
+    ap.add_argument("-m", "--message", help="Commit message for --push / --push-database.")
     ap.add_argument("--path", help="With --init: where to clone (default ~/mtg-data).")
     # --bootstrap options:
     ap.add_argument("--repo", help="With --bootstrap: repo name (default 'mtg-data'), 'owner/name', or a clone URL.")
@@ -154,6 +164,10 @@ def main():
         return _print_result("pull", sync.pull())
     if args.push:
         return _print_result("push", sync.push(args.message))
+    if args.push_database:
+        return _print_result("push-database", sync.push_database(args.message))
+    if args.pull_database:
+        return _print_result("pull-database", sync.pull_database())
     if args.init:
         res = sync.init(args.init, args.path)
         if not res["ok"]:

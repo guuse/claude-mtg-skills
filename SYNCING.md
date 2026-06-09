@@ -22,13 +22,18 @@ The skills resolve their workspace in this order: **`$MTG_HOME` → nearest `.mt
 
 ```
 $MTG_HOME/               ← your private "mtg-data" repo, cloned on each machine
-├── decks/               ← versioned: every deck.md guide + import.txt / arena.txt   (synced)
+├── decks/               ← versioned: built decks, split by format                    (synced)
+│   ├── edh/             ←   Commander/EDH decks (deck.md guide + import.txt)
+│   └── std/             ←   MTG Arena Standard decks (deck.md guide + arena.txt)
 ├── collection/          ← versioned: your Moxfield / Arena / Archidekt exports       (synced)
-└── database/            ← cards.sqlite + meta.json — git-ignored, rebuilt per machine (NOT synced)
+└── database/            ← cards.sqlite + meta.json — rebuilt per machine;            (synced on demand
+                            optionally shared via Git LFS                              via --push/--pull-database)
 ```
 
-The big `cards.sqlite` (~170 MB) stays out of git — it's rebuilt from Scryfall on each machine in ~30 s,
-so there's no reason to sync it. Only your decks and collection travel.
+By default the big `cards.sqlite` (~170 MB) stays out of git — it's rebuilt from Scryfall on each
+machine in ~30 s, so routine syncs only move your decks and collection. If you'd rather **share the
+built database** than rebuild it everywhere, the dedicated `--push-database` / `--pull-database`
+commands sync it via **Git LFS** — see [Optionally syncing the card database](#optionally-syncing-the-card-database-git-lfs) below.
 
 > **Why git and not Moxfield/Archidekt directly?** Those are the natural *human* home for MTG decks, but
 > neither offers a free, supported write-API a tool can rely on, so the skills can't read your collection
@@ -75,11 +80,18 @@ Give it this minimal structure so the layout is committed but the database is ig
 **`~/mtg-data/.gitignore`**
 
 ```gitignore
-# The card database is a large, rebuildable Scryfall cache — never sync it.
+# Large, rebuildable Scryfall cache — kept out of routine syncs (the mtg-db skill
+# force-adds cards.sqlite via Git LFS only when you opt in with --push-database).
 database/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+```
+
+If you want the optional database-over-LFS flow (below), also add a `.gitattributes`:
+
+```gitattributes
+database/cards.sqlite filter=lfs diff=lfs merge=lfs -text
 ```
 
 **`~/mtg-data/README.md`** (optional, but handy on GitHub mobile)
@@ -148,7 +160,7 @@ Under the hood, that's just:
 
 ```bash
 python <mtg-sync>/scripts/sync.py --pull           # before a build (the deck skill runs this)
-# ... build/upgrade a deck; deck.md + import list land in $MTG_HOME/decks/<slug>/ ...
+# ... build/upgrade a deck; deck.md + import list land in $MTG_HOME/decks/<edh|std>/<slug>/ ...
 python <mtg-sync>/scripts/sync.py --push -m "Add Atraxa superfriends deck"   # after (deck skill runs this)
 ```
 
@@ -156,6 +168,39 @@ python <mtg-sync>/scripts/sync.py --push -m "Add Atraxa superfriends deck"   # a
 in `$MTG_HOME`. Best-effort: if you're offline it's a no-op and the deck is still saved locally — push it
 later with `python <mtg-sync>/scripts/sync.py --push`, or just *"sync my decks"*. Because each deck lives
 in its own folder, conflicts are practically impossible.
+
+---
+
+## Optionally syncing the card database (Git LFS)
+
+The card database is a rebuildable cache, so by default it's git-ignored and **not** synced — each
+machine rebuilds it in ~30 s and routine deck syncs stay small. But you can also **share the exact
+built `cards.sqlite`** across machines, so a second computer fetches it instead of re-downloading
+540 MB from Scryfall and rebuilding (and so prices stay identical everywhere).
+
+Because `cards.sqlite` is ~170 MB — over GitHub's **100 MB** per-file limit on plain git — it's
+stored with **[Git LFS](https://git-lfs.com)**. The setup is automatic: `--bootstrap` / `--init`
+write a `.gitattributes` rule tracking `database/cards.sqlite` and, if the `git-lfs` extension is
+installed, run `git lfs install` for you. Install Git LFS once per machine (`git lfs install`, or
+`brew install git-lfs` / your package manager).
+
+```bash
+# After you (re)build the database, ship it (the mtg-db skill offers to do this):
+python <mtg-sync>/scripts/sync.py --push-database -m "Refresh card data (2026-06)"
+
+# On another / a new machine, fetch the shared database instead of rebuilding:
+python <mtg-sync>/scripts/sync.py --pull-database
+```
+
+- `--push-database` force-adds `cards.sqlite` + `meta.json` past the `database/` ignore rule, commits,
+  and pushes them through LFS. It's **best-effort**: if the workspace isn't a synced repo, or `git-lfs`
+  isn't installed, it prints `skipped` and the database simply stays local and rebuildable.
+- The heavy file ships **only** through these two commands — never on a routine deck `--push` — so
+  building a deck never re-uploads 170 MB.
+- If you `--pull-database` (or clone) on a machine **without** `git-lfs`, `cards.sqlite` lands as a tiny
+  LFS *pointer* stub rather than the real file. The skills detect that and rebuild the database locally
+  instead of trying to read the stub, so nothing breaks — install Git LFS and re-run `--pull-database`
+  to get the shared copy.
 
 ---
 
@@ -177,9 +222,9 @@ Cloning the skills repo "cleanly" on any of these stays clean: your personal dat
 When you want the native MTG experience on a phone — nice card images, the deck playtester, sharing —
 mirror a deck into Moxfield by hand (a 30-second copy/paste, no API needed):
 
-1. **Create the deck:** New deck → **Import** → paste the contents of `decks/<slug>/import.txt`
-   (Commander) or `arena.txt` (Standard).
-2. **Carry the guide over:** paste `decks/<slug>/deck.md` into the deck's **Description / primer** field —
+1. **Create the deck:** New deck → **Import** → paste the contents of `decks/edh/<slug>/import.txt`
+   (Commander) or `decks/std/<slug>/arena.txt` (Standard).
+2. **Carry the guide over:** paste the matching `decks/<edh|std>/<slug>/deck.md` into the deck's **Description / primer** field —
    Moxfield renders Markdown, so your annotated guide shows up formatted.
 3. Set the deck **Private** or **Unlisted** if you don't want it public.
 

@@ -42,16 +42,19 @@ Always produce **two files** (the user wants both):
    Creatures, Removal/Interaction, Card Advantage, Other Spells, Lands; plus Sideboard for BO3). Every
    line shows count, card name, **rarity (C/U/R/M)**, and a one-line reason. Include the mana curve, the
    land count, the **wildcard-cost breakdown** (commons/uncommons/rares/mythics required vs the tier cap),
-   the target tier, the match type (BO1/BO3), and a short "how the deck wins + meta plan" paragraph.
+   the target tier, the match type (BO1/BO3), a short "how the deck wins + meta plan" paragraph, and a
+   **Deck Rating** section — an overall ★ rating (out of 5) for the deck on the current ladder at its tier,
+   plus the per-dimension scorecard (see "Step 10 — Rank the finished deck").
 2. **Arena import list** (`arena.txt`) — exact MTG Arena import format: a `Deck` header, then
    `<count> <Card Name>` per line; a blank line then `Sideboard` and 15 cards if BO3. Generate this *from*
    the annotated list so they can't drift.
 
-Use `present_files` to share both, and **save them in their own folder under `.mtg/decks/`** in the
-user's current working directory: `.mtg/decks/<deck-slug>/deck.md` and
-`.mtg/decks/<deck-slug>/arena.txt`. Create the folder if it doesn't exist. The slug is a short
-kebab-case deck name (the centerpiece or archetype, e.g. `.mtg/decks/mono-red-aggro/` or
-`.mtg/decks/dimir-bounce/`); add a distinguishing suffix for variants so existing decks aren't
+Use `present_files` to share both, and **save them in their own folder under `.mtg/decks/std/`** in the
+user's current working directory: `.mtg/decks/std/<deck-slug>/deck.md` and
+`.mtg/decks/std/<deck-slug>/arena.txt`. Create the folder if it doesn't exist. (MTG Arena Standard decks
+live under `decks/std/`; Commander/EDH decks live under `decks/edh/`.) The slug is a short
+kebab-case deck name (the centerpiece or archetype, e.g. `.mtg/decks/std/mono-red-aggro/` or
+`.mtg/decks/std/dimir-bounce/`); add a distinguishing suffix for variants so existing decks aren't
 overwritten. See "The `.mtg` workspace" below.
 
 ## The `.mtg` workspace
@@ -75,9 +78,11 @@ they set `$MTG_HOME`) before reading or writing anything, and use that location 
 
 The subdirectories:
 
-- **`.mtg/decks/`** — where built decks are written. **Each deck gets its own subfolder**,
-  `.mtg/decks/<deck-slug>/`, holding that deck's two files (`deck.md` and `arena.txt`). Create the
-  directories if they're missing. This is the same decks folder the other deckbuilding skills use.
+- **`.mtg/decks/`** — where built decks are written, **split by format**: MTG Arena Standard under
+  `.mtg/decks/std/` and Commander/EDH under `.mtg/decks/edh/`. **Each deck gets its own subfolder** —
+  for this skill, `.mtg/decks/std/<deck-slug>/`, holding that deck's two files (`deck.md` and
+  `arena.txt`). Create the directories if they're missing. This is the same decks folder the other
+  deckbuilding skills use.
 - **`.mtg/collection/`** — the user's **Arena collection** (which cards, and how many, they own),
   as a **`.txt`**, **`.csv`**, or **`.json`** export (e.g. `mtga_collection.txt`). This is the
   **starting inventory for every build** and the single biggest lever on deck quality — see "First:
@@ -151,7 +156,9 @@ inventory for all steps below.
 ## The method (centerpiece-first brewing)
 
 Full detail and the reasoning behind each step is in `references/methodology.md` — read it before building.
-The Scryfall recipes for finding cards are in `references/scryfall-syntax.md`. The short version:
+The **synergy-scoring loop** behind Steps 2–3 (read → extract → map to tags → intersect → score, holding the
+payoff core to ≥2–3 points of contact) is in `references/synergy.md` — read it too. The Scryfall recipes for
+finding cards are in `references/scryfall-syntax.md`. The short version:
 
 **Build from the collection first, then upgrade.** When a collection is loaded, work owned-cards-out:
 for every slot in every step below, first look in the collection for the best card the user already
@@ -181,12 +188,20 @@ come from the non-obvious ones. Enumerate them:
   trigger). These "breaks" are where original decks come from.
 
 ### Step 3 — Build the synergy web
-Find cards that give **2-for-1s** with the centerpiece along the axes you listed, and that synergize with
-*each other*. Hunt for the non-obvious interaction that speeds the deck up "tenfold." Use EDHREC-style
+Run the **synergy-scoring loop in `references/synergy.md` (read it):** for each axis you listed in Step 2,
+**map it to a Scryfall handle** — a curated Tagger tag (`function:`/`otag:`) where one fits, otherwise
+`o:"…"` oracle text, `t:…` types, or `keyword:…` — **search, intersect, and score** candidates by their
+points of contact. The bar for the deck's **payoff/synergy core**: each such card should give a real
+**2-for-1** with the centerpiece *and* play with the other pieces — aim for **2–3 points of contact**, more
+is better. Hunt for the non-obvious interaction that speeds the deck up "tenfold." Use EDHREC-style
 aggregators sparingly here (this is Standard, not EDH) — lean on the meta sites and Scryfall oracle-text
-searches (`references/scryfall-syntax.md`). **With a collection loaded, scan it first** for cards that
-fill each axis and build from those; reach into the wider pool only to upgrade an owned piece or to fill
-a synergy slot the collection can't cover.
+searches (`references/scryfall-syntax.md`). **With a collection loaded, scan it first** for cards that fill
+each axis and build from those; reach into the wider pool only to upgrade an owned piece or to fill a synergy
+slot the collection can't cover.
+
+(Standard leans on more pure-efficiency cards and meta answers than EDH, so the **structural slots** — lands,
+removal, sweepers, meta-tech — are exempt from the 2–3 rule per `references/synergy.md`; hold the
+*payoff/synergy* core to it.)
 
 **Check in on the direction here.** Before building the full 60, tell the user the plan in a couple of
 sentences — the centerpiece and the axis you're leaning into, how the deck wins, and a few signature cards
@@ -239,8 +254,19 @@ trim copies — lean on the meta knowledge so you cut the least important pieces
 the meta plan, the mana base, and the **wildcard cost / what they'd need to craft** — and call out any
 close calls. Invite changes: cards they own and want to use instead, a lower wildcard spend, a different
 answer for a matchup they care about. Make the swaps they ask for (re-checking the 60-card count, legality,
-and the tier each time) and keep going until they're happy. **Only then** run the quality checks below and
-write the two files.
+and the tier each time) and keep going until they're happy. **Only then** run the quality checks below, rank
+the deck (Step 10), and write the two files.
+
+### Step 10 — Rank the finished deck (★ rating)
+Once the list is locked, **rate it before writing files** and embed the result in `deck.md`. Apply the
+**five-dimension rubric in `references/rating.md`** — consistency & curve, mana base, synergy/payoff density
+(via `references/synergy.md`), meta resilience, and wildcard efficiency — rating the deck *for the current
+ladder at its tier and match type* (BO1/BO3). Use the data you already gathered: the curve and land count
+from Step 7, the wildcard tally from `--deck --tier`, the color audit from `--colors`, and the meta read from
+Steps 5–6. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★★☆ (4/5) — a strong Tier-3
+BO1 ladder deck`), the per-dimension scorecard with the numbers/reasons behind each, and one line on the
+deck's biggest remaining weakness. A healthy build should rate well — if a dimension scores low (e.g. soft to
+mono-red, or a mana base fighting the curve), fix it before delivering rather than shipping a low score.
 
 ## Data sources
 
@@ -296,6 +322,8 @@ the two files so nothing the user already has is mistakenly counted as a craft.
 - **Meta plan:** the deck has real answers for the top 2-3 ladder decks, and the mana base matches its
   speed. Curve and land count are sensible for the archetype.
 - Rarity is labeled on every card in the annotated list.
+- **Rating included:** `deck.md` carries the **Deck Rating** section from Step 10 (overall ★ for the ladder
+  at its tier + the per-dimension scorecard).
 
 Then present both files.
 

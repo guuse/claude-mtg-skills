@@ -31,6 +31,12 @@ how current the data is.
   type, mana value, color identity/colors, power/toughness, rarity, keywords, legalities, the
   **Game Changer** flag, **EDHREC rank**, **Arena/paper/MTGO** availability, and the **cheapest**
   EUR/USD price across all printings (Cardmarket via Scryfall for EUR).
+- **`.mtg/database/arena_cards`** (a table in the same `cards.sqlite`) — a per-printing
+  **`arena_id` → name / set / collector number** map. The deckbuilding skills don't use it; the
+  **mtg-export** skill does, to translate an MTG Arena collection (read from game memory as
+  `arena_id → owned count`) back into card names — so the exporter never downloads its own card
+  data. A database built before this table existed won't have it; **mtg-export** will ask for a
+  `--refresh` in that case.
 - **`.mtg/database/meta.json`** — records the source bulk version and build date (used for the
   staleness check).
 
@@ -51,6 +57,25 @@ python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --refresh  # force a rebu
 python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --path P   # use an explicit database location (see no-FS case)
 python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --json     # machine-readable output
 ```
+
+## Sharing the database across machines (optional, via mtg-sync + Git LFS)
+
+By default each machine builds its own copy of `cards.sqlite` — it's a rebuildable cache, so it's
+git-ignored and doesn't travel with the synced decks/collection. If the user would rather **share the
+exact built database** (e.g. to skip the 540 MB Scryfall download on a second machine, or to keep
+prices identical across machines), the **mtg-sync** skill can ship it via **Git LFS**:
+
+- **After you build or `--refresh`** the database, offer to push it by running the **mtg-sync** skill
+  with `--push-database` (e.g. `-m "Refresh card data"`). It commits + pushes `cards.sqlite` +
+  `meta.json` via LFS (force-added past the `database/` ignore rule). This is best-effort — if the
+  workspace isn't a synced repo or `git-lfs` isn't installed, it reports `skipped` and the database
+  just stays local.
+- **On another machine**, instead of rebuilding, fetch the shared copy by running the **mtg-sync**
+  skill with `--pull-database`.
+
+Don't do this automatically on a plain local build — only when the user is using sync (an `mtg-data`
+repo) and wants the database shared. The heavy file ships **only** through these dedicated commands,
+never on a routine deck `--push`, so normal deck saves stay small.
 
 ## When the deck skills run
 

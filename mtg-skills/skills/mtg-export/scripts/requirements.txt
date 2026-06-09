@@ -1,0 +1,4 @@
+# Dependencies for the mtg-export skill's memory scanner.
+# Unlike the other skills (stdlib-only), reading the live MTG Arena process needs:
+numpy            # fast scan over raw memory regions (both platforms)
+pymem ; sys_platform == "win32"   # Windows process memory access (macOS uses Mach APIs in the stdlib)

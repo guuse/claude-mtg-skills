@@ -3,8 +3,13 @@
 The workspace (resolved by `paths.py`, normally via `$MTG_HOME`) can be a clone of the
 user's private `mtg-data` git repo. These helpers let the mtg-sync skill **pull** the
 latest decks/collection before a build and **push** new ones after — so the same data
-follows the user across machines. The card database lives in the same workspace but is
-git-ignored (rebuildable), so it never syncs.
+follows the user across machines.
+
+The card database lives in the same workspace and is git-ignored by default so those
+routine deck/collection syncs stay lean. It can *also* be synced on demand via
+`push_database()` / `pull_database()`: because it's a >100 MB binary (over GitHub's
+per-file limit) it's tracked with **Git LFS** and force-added past the ignore rule, and
+shipped only when the mtg-db skill (re)builds it — not on every deck save.
 
 Design rules (mirroring how the database is best-effort, never blocking):
 - Everything degrades gracefully: no git, no network, or a workspace that isn't a repo
@@ -29,13 +34,26 @@ PLUGIN_NAME = "mtg-skills"
 DEFAULT_REPO_NAME = "mtg-data"
 
 GITIGNORE_TEMPLATE = (
-    "# Rebuildable Scryfall card cache — never sync it (the mtg-db skill rebuilds it per machine).\n"
+    "# Scryfall card cache. Ignored by default so routine deck/collection syncs stay lean;\n"
+    "# the mtg-db skill force-adds cards.sqlite + meta.json via Git LFS only when you choose\n"
+    "# to sync the database (sync.py --push-database).\n"
     "database/\n\n"
     "# OS / Python noise\n"
     ".DS_Store\n"
     "__pycache__/\n"
     "*.pyc\n"
 )
+
+# The card database is large (~170 MB) and binary, and GitHub rejects single files over
+# 100 MB on regular git — so it's tracked via Git LFS when synced. Only the .sqlite needs
+# LFS; the tiny meta.json stays as normal git. The dedicated --push-database command
+# force-adds these (database/ build artifacts are otherwise git-ignored).
+DB_LFS_PATTERN = "database/cards.sqlite"
+GITATTRIBUTES_TEMPLATE = (
+    "# Scryfall card database — large binary, stored via Git LFS (see SYNCING.md).\n"
+    f"{DB_LFS_PATTERN} filter=lfs diff=lfs merge=lfs -text\n"
+)
+DB_SYNC_FILES = ("database/cards.sqlite", "database/meta.json")
 
 
 def _settings_json():
@@ -73,15 +91,18 @@ def _readme():
         "**auto-installs** from the marketplace on session start (see `.claude/settings.json`), so a "
         "fresh clone is ready to build and tune decks with no manual setup.\n\n"
         "```\n"
-        "decks/<slug>/   built decks (deck.md + import.txt / arena.txt)    synced\n"
-        "collection/     collection exports (Archidekt / Arena / Moxfield) synced\n"
-        "database/       cards.sqlite — Scryfall cache, git-ignored, rebuilt per machine (NOT synced)\n"
+        "decks/edh/<slug>/  built Commander decks (deck.md + import.txt)      synced\n"
+        "decks/std/<slug>/  built Arena Standard decks (deck.md + arena.txt)  synced\n"
+        "collection/        collection exports (Archidekt / Arena / Moxfield) synced\n"
+        "database/          cards.sqlite — Scryfall cache; rebuilt per machine, optionally\n"
+        "                   synced via Git LFS (sync.py --push-database / --pull-database)\n"
         "```\n\n"
         "```bash\n"
         'export MTG_HOME="$(pwd)"   # macOS/Linux;  Windows:  setx MTG_HOME "%CD%"\n'
         "```\n\n"
         "Decks/collection sync via the **mtg-sync** skill (pull before a build, push after). The card "
-        "database never syncs — the **mtg-db** skill rebuilds it locally.\n"
+        "database is rebuilt locally by the **mtg-db** skill; you can also sync it across machines "
+        "with **Git LFS** (`sync.py --push-database` / `--pull-database`) instead of rebuilding.\n"
     )
 
 
@@ -102,6 +123,15 @@ def git_available():
     """True if a `git` executable is callable."""
     code, _, _ = _run(["git", "--version"])
     return code == 0
+
+
+def lfs_available():
+    """True if the Git LFS extension is installed (`git lfs version` succeeds).
+
+    Required to *sync* the card database (it's >100 MB, over GitHub's per-file limit, so
+    it lives in LFS). Everything else — decks/collection sync — works without it.
+    """
+    return _run(["git", "lfs", "version"])[0] == 0
 
 
 def is_git_repo(path):
@@ -228,14 +258,132 @@ def push(message=None):
     }
 
 
+# --------------------------------------------------------------------------- #
+# Card-database sync (Git LFS). Kept separate from push()/pull() so routine deck #
+# saves stay lean — the heavy (~170 MB) database ships only when the mtg-db skill #
+# (re)builds it and explicitly asks to sync it.                                   #
+# --------------------------------------------------------------------------- #
+
+def _ensure_gitattributes(home):
+    """Ensure `.gitattributes` tracks the card database via Git LFS. Non-destructive."""
+    ga = os.path.join(home, ".gitattributes")
+    if not os.path.exists(ga):
+        with open(ga, "w", encoding="utf-8") as fh:
+            fh.write(GITATTRIBUTES_TEMPLATE)
+        return
+    with open(ga, encoding="utf-8") as fh:
+        existing = fh.read()
+    if DB_LFS_PATTERN not in existing:
+        with open(ga, "a", encoding="utf-8") as fh:
+            if existing and not existing.endswith("\n"):
+                fh.write("\n")
+            fh.write(GITATTRIBUTES_TEMPLATE)
+
+
+def _ensure_lfs(home):
+    """Prepare `home` to store the card database via Git LFS. Best-effort.
+
+    Writes the `.gitattributes` LFS rule and installs LFS hooks for this repo. Requires
+    the git-lfs extension; if it's absent, return ok=False with a reason and the caller
+    leaves the database local (it's rebuildable per machine, as always).
+    Returns {ok, reason}.
+    """
+    if not lfs_available():
+        return {"ok": False,
+                "reason": "git-lfs is not installed — install the Git LFS extension "
+                          "(https://git-lfs.com) to sync the card database"}
+    _ensure_gitattributes(home)
+    code, out, err = _run(["git", "lfs", "install", "--local"], cwd=home)
+    if code != 0:
+        return {"ok": False, "reason": f"git lfs install failed: {err or out}"}
+    return {"ok": True, "reason": None}
+
+
+def push_database(message=None):
+    """Commit + push the built card database (cards.sqlite + meta.json) via Git LFS.
+
+    Separate from push(): the heavy database ships only when explicitly requested (the
+    mtg-db skill calls this after a build/refresh), so routine deck saves stay small. The
+    files are force-added because database/ is git-ignored by default. Best-effort.
+    Returns {ok, skipped, committed, home, message, reason}.
+    """
+    home = workspace_root()
+    skip = _guard(home)
+    if skip:
+        skip["committed"] = False
+        return skip
+
+    lfs = _ensure_lfs(home)
+    if not lfs["ok"]:
+        return {"ok": False, "skipped": True, "committed": False, "home": home,
+                "message": lfs["reason"], "reason": lfs["reason"]}
+
+    present = [f for f in DB_SYNC_FILES if os.path.exists(os.path.join(home, f))]
+    if not present:
+        return {"ok": False, "skipped": True, "committed": False, "home": home,
+                "message": "no built database to push — build it first (mtg-db skill)",
+                "reason": "database not built"}
+
+    # Stage the LFS rule plus the database files (force past the database/ ignore rule).
+    if os.path.exists(os.path.join(home, ".gitattributes")):
+        _run(["git", "add", "--", ".gitattributes"], cwd=home)
+    _run(["git", "add", "-f", "--", *present], cwd=home)
+    _, staged, _ = _run(["git", "diff", "--cached", "--name-only"], cwd=home)
+
+    if not staged:
+        code, out, err = _run(["git", "push"], cwd=home)
+        return {"ok": code == 0, "skipped": False, "committed": False, "home": home,
+                "message": out or err or "database already up to date",
+                "reason": None if code == 0 else "push failed"}
+
+    msg = (message or "").strip() or "Sync MTG card database"
+    code_c, out_c, err_c = _run(["git", "commit", "-m", msg], cwd=home)
+    if code_c != 0:
+        return {"ok": False, "skipped": False, "committed": False, "home": home,
+                "message": err_c or out_c, "reason": "commit failed"}
+    code_p, out_p, err_p = _run(["git", "push"], cwd=home)
+    return {"ok": code_p == 0, "skipped": False, "committed": True, "home": home,
+            "message": out_p or err_p,
+            "reason": None if code_p == 0 else "push failed (commit is saved locally)"}
+
+
+def pull_database():
+    """Pull the latest workspace and materialize the LFS-tracked card database.
+
+    Use on another/new machine to fetch the shared database instead of rebuilding it from
+    Scryfall. Best-effort. Returns {ok, skipped, home, message, reason}.
+    """
+    home = workspace_root()
+    skip = _guard(home)
+    if skip:
+        return skip
+    code, out, err = _run(["git", "pull", "--rebase", "--autostash"], cwd=home)
+    if code != 0:
+        return {"ok": False, "skipped": False, "home": home,
+                "message": out or err, "reason": "pull failed"}
+    msg = out or "up to date"
+    if lfs_available():
+        lc, lo, le = _run(
+            ["git", "lfs", "pull", "--include", DB_LFS_PATTERN], cwd=home)
+        if lc != 0:
+            return {"ok": False, "skipped": False, "home": home,
+                    "message": le or lo, "reason": "git lfs pull failed"}
+        msg = f"{msg}; fetched database via LFS"
+    else:
+        msg = (f"{msg}; note: git-lfs isn't installed, so the database is still an "
+               "unfetched pointer — install Git LFS and re-run, or rebuild it (mtg-db skill)")
+    return {"ok": True, "skipped": False, "home": home, "message": msg, "reason": None}
+
+
 def _scaffold(home):
     """Make `home` a complete, auto-install-ready data workspace. Non-destructive:
     creates only what's missing, never clobbers existing files.
 
-    Ensures decks/ + collection/ (with .keep), a .gitignore that excludes the rebuildable
-    database/, a README, and .claude/settings.json (which wires up plugin auto-install).
+    Ensures decks/std + decks/edh + collection/ (with .keep), a .gitignore that excludes
+    the build artifacts under database/, a .gitattributes that tracks the card database via
+    Git LFS, a README, and .claude/settings.json (which wires up plugin auto-install).
     """
-    for sub in ("decks", "collection"):
+    for sub in (os.path.join("decks", "std"), os.path.join("decks", "edh"), "collection"):
         os.makedirs(os.path.join(home, sub), exist_ok=True)
         keep = os.path.join(home, sub, ".keep")
         if not os.path.exists(keep):
@@ -253,7 +401,11 @@ def _scaffold(home):
             with open(gi, "a", encoding="utf-8") as fh:
                 if existing and not existing.endswith("\n"):
                     fh.write("\n")
-                fh.write("# Rebuildable Scryfall card cache — never sync it.\ndatabase/\n")
+                fh.write("# Scryfall card cache — ignored by default (force-added via LFS "
+                         "on --push-database).\ndatabase/\n")
+
+    # Track the (large, binary) card database via Git LFS so --push-database can ship it.
+    _ensure_gitattributes(home)
 
     readme = os.path.join(home, "README.md")
     if not os.path.exists(readme):
@@ -437,6 +589,7 @@ def bootstrap(repo=None, dest=None, private=True, source=None, do_push=True):
                 action = "created + cloned"
 
     _scaffold(dest)
+    _ensure_lfs(dest)  # best-effort: ready the repo for database sync if git-lfs is present
 
     src = source if source is not None else _auto_source(dest)
     migrated = migrate(src, dest) if src else {"decks": 0, "collection": 0, "from": None, "skipped": "none"}

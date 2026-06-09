@@ -12,7 +12,7 @@ import os
 
 from . import api
 from .build import build_database
-from .paths import default_db_path, meta_path_for
+from .paths import default_db_path, is_lfs_pointer, meta_path_for
 
 STALE_AFTER_DAYS = 30
 
@@ -48,7 +48,10 @@ def database_status(db_path=None, check_remote=False):
     bulk than the local one (so a "stale" DB that matches the latest needn't re-download).
     """
     db_path = db_path or default_db_path()
-    info = {"db_path": db_path, "exists": os.path.exists(db_path)}
+    # An unfetched Git LFS pointer (git-lfs not installed on this clone) is a text stub,
+    # not a real DB — treat it as absent so we rebuild/fetch rather than mis-read it.
+    exists = os.path.exists(db_path) and not is_lfs_pointer(db_path)
+    info = {"db_path": db_path, "exists": exists}
     if not info["exists"]:
         info.update({"age_days": None, "stale": True, "unique_cards": 0})
         return info

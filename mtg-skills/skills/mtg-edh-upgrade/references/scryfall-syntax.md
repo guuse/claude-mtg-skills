@@ -19,7 +19,8 @@ Named lookup:   `https://api.scryfall.com/cards/named?exact=<name>` (full card +
 | `t:type` | Card type / supertype / subtype (partial ok) | `t:creature`, `t:artifact`, `t:legend` |
 | `mv<=3` | Mana value comparisons (`>`, `<`, `=`, `>=`, `<=`, `!=`) | `mv>=6`, `mv=2` |
 | `pow>=4` | Power / toughness | `pow>=5` |
-| `function:ramp` | **Oracle function tags** (curated by Scryfall's Tagger) | see below |
+| `function:ramp` | **Oracle function tags** (curated by Scryfall's Tagger; alias `otag:`) | see below |
+| `keyword:flying` | **Keyword ability** the card has | `keyword:convoke`, `keyword:deathtouch` |
 | `is:gamechanger` | Cards on the official Game Changers list (verify syntax if it misses) | `is:gamechanger id<=WB` |
 | `-` prefix | Negation | `t:goblin -t:creature` |
 | `or` | Either term | `(o:"draw two" or o:"draw three")` |
@@ -35,6 +36,20 @@ cards real decks run.
 including multicolor (B/U, B/R…) cards that are **illegal** outside their full color identity. Color
 identity (`id<=`) is what determines deck legality. The search table prints a **CI (color identity)**
 column for every card — glance at it and confirm each card fits the commander's identity before adding it.
+
+## Finding multi-synergy cards (the intersection)
+
+The synergy method (`references/synergy.md`) turns each of the commander's keywords into a Scryfall handle,
+then looks for cards that hit **several at once**. Two ways to find that intersection:
+
+- **AND handles in one query** (all terms are AND by default) — the fastest way to surface cards that are
+  *already* multiple synergies. A death-trigger that also draws: `id<=BG (o:"whenever a creature" o:"dies")
+  function:card-advantage`. A token-maker that's also fodder: `id<=GW otag:token-maker t:creature mv<=3`.
+- **Run one query per keyword, then cross-reference the names that recur** across pools when a single
+  combined query is too narrow (or when you need to union a thin Tagger tag with its `o:"…"` phrasing).
+
+Rank what surfaces by how many of your handles each card matches — that count *is* its points-of-contact
+score. Keep the densest; drop one-contact cards (see `references/synergy.md` for the ≥2–3 rule).
 
 ## Function tags (the fast path for categories)
 

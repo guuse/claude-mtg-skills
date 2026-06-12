@@ -83,44 +83,61 @@ The subdirectories:
   for this skill, `.mtg/decks/std/<deck-slug>/`, holding that deck's two files (`deck.md` and
   `arena.txt`). Create the directories if they're missing. This is the same decks folder the other
   deckbuilding skills use.
-- **`.mtg/collection/mtga_collection.txt`** — the user's **Arena collection** (which cards, and how
-  many, they own), as a plain `<count> <Card Name>` export. This is the **starting inventory for
-  every build** and the single biggest lever on deck quality — see "First: load the user's Arena
-  collection" below for how to obtain, confirm, and use it. A card the user already owns the needed
-  copies of costs **0 wildcards**; the wildcard budget pays only for the gaps you fill by crafting.
+- **`.mtg/collection/`** — the user's **Arena collection** (which cards, and how many, they own),
+  as a **`.txt`**, **`.csv`**, or **`.json`** export (e.g. `mtga_collection.txt`). This is the
+  **starting inventory for every build** and the single biggest lever on deck quality — see "First:
+  load the user's Arena collection" below for how to obtain, confirm, and use it (it's loaded with the
+  bundled `--collection` helper, which accepts any of those formats). A card the user already owns the
+  needed copies of costs **0 wildcards**; the wildcard budget pays only for the gaps you fill by crafting.
 
 ### Keeping decks in sync across machines (mtg-sync)
 
-If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
-use the **mtg-sync** skill at the edges of this build — **pull before, push after** — the same way
-card data comes from mtg-db:
+Decks live in the user's `mtg-data` git repo, and the user wants **every build to pull at the start
+and push at the end** — the same way card data comes from mtg-db. **Don't try to judge whether
+syncing is set up before acting — always run the sync commands and let the helper tell you.**
+`sync.py` returns `skipped` when the workspace isn't a git repo, so an unconditional call is safe
+everywhere; guessing whether to run it is exactly what makes pushing flaky.
 
 - **At the start**, before loading the Arena collection or writing anything, invoke **mtg-sync** to
   pull (`--pull`). This first brings down decks/collection built on another machine.
-- **After saving the deck's files**, invoke **mtg-sync** to push
-  (`--push -m "<archetype>"`), so the new deck is available everywhere.
+- **As the final action of the build** (see **Final step — always commit & push** at the end of this
+  skill), invoke **mtg-sync** to push (`--push -m "<archetype>"`), so the new deck lands on the repo's
+  main branch and is available everywhere. This push runs **every time**, not only when you think sync
+  is configured.
 
-**Best-effort — never block the build.** If sync reports `skipped` (syncing isn't set up) or `FAILED`
-(e.g. offline), note it in one line and continue; the deck is saved locally and can be pushed later.
-To set syncing up for the first time, use the **mtg-sync** skill.
+**Only the *result* is best-effort.** If the push reports `skipped` (syncing isn't set up) or
+`FAILED` (e.g. offline), note it in one line and continue — the deck is saved locally and can be
+pushed later. Never skip the *attempt*. To set syncing up the first time, use the **mtg-sync** skill
+(`--bootstrap`).
 
 ## First: load the user's Arena collection
 
 **Before anything else, get the user's MTG Arena collection.** The deck is built primarily from
 cards they already own, so this is the single biggest lever on deck quality — say so plainly: an
 up-to-date export lets the builder construct a deck the user can play *today* and spend wildcards
-only where they truly move the needle. The collection lives at
-**`.mtg/collection/mtga_collection.txt`** (a plain `<count> <Card Name>` export). Handle two cases:
+only where they truly move the needle.
 
-- **No collection file present** → ask the user to export their collection to
-  `.mtg/collection/mtga_collection.txt`, and recommend the free exporter
-  **https://github.com/NthPhantom10/MTGA-collection-exporter** (it produces exactly that
-  `<count> <Card Name>` list from the MTGA client). Make clear it's strongly recommended: without it
-  you build from the whole Standard pool and cost every non-basic card in wildcards from zero, which
-  is far less tailored. If the user declines, proceed without it and note the trade-off.
-- **Collection file present** → ask the user whether it's **up to date** and whether to **use it**
-  for this build. If it's stale, offer to let them re-export with the same tool and replace the
-  file. Once confirmed, read it fully.
+The export lives in **`.mtg/collection/`** and can be any of the three shapes the common Arena
+exporters produce — **`.txt`** (a plain `<count> Card Name` list), **`.csv`** (a header row with
+name/quantity columns, e.g. Moxfield's `Count,Name,…`), or **`.json`** (an array of `{name, quantity}`
+objects, or a `{name: count}` map). **Don't hand-parse it** — run the bundled helper, which finds the
+file (whichever extension) and normalises it to a clean `<count> Card Name` list regardless of format:
+
+```bash
+python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --collection
+```
+
+(Pass an explicit path — `--collection <file>` — if the export lives elsewhere.) Handle two cases:
+
+- **The helper reports no file found** → ask the user to drop an export into `.mtg/collection/`
+  (any of `.txt`/`.csv`/`.json`), and recommend the free exporter
+  **https://github.com/NthPhantom10/MTGA-collection-exporter**. Make clear it's strongly recommended:
+  without it you build from the whole Standard pool and cost every non-basic card in wildcards from
+  zero, which is far less tailored. If the user declines, proceed without it and note the trade-off.
+- **A collection is found** → the helper prints the card total and the format it parsed. If it prints
+  a `NOTE:` (e.g. a JSON export keyed only by Arena IDs it can't map to names), relay it and ask for a
+  name-based export. Ask the user whether it's **up to date** and whether to **use it** for this build;
+  if it's stale, offer a re-export. Once confirmed, use the normalised list as the inventory.
 
 **Whenever a collection is available, use it for every build** and treat it as the starting
 inventory for all steps below.
@@ -309,3 +326,22 @@ the two files so nothing the user already has is mistakenly counted as a craft.
   at its tier + the per-dimension scorecard).
 
 Then present both files.
+
+## Final step — always commit & push (every build ends here)
+
+This is the step that gets missed, so treat it as part of the deliverable, not an afterthought.
+**After the two files are written and presented, the last thing you do — every single time — is push
+them** by invoking the **mtg-sync** skill: `--push -m "<archetype>"`.
+
+Run it **unconditionally**. Do *not* first reason about whether the workspace is a synced repo — just
+run it. The helper handles every case and reports back:
+
+- **`ok` (committed + pushed)** → confirm in one line that the deck was pushed to the `mtg-data` repo's
+  main branch.
+- **`skipped`** → the workspace isn't a synced git repo; say so in one line and stop (offer
+  `--bootstrap` via mtg-sync if they'd like syncing set up).
+- **`FAILED`** → e.g. offline or an auth issue; say so in one line — the deck is committed/saved
+  locally and can be pushed later.
+
+Only the *handling of that result* is best-effort. The **attempt is mandatory** — never end a build
+without running the push.

@@ -87,18 +87,23 @@ The subdirectories:
 
 ### Keeping decks in sync across machines (mtg-sync)
 
-If the workspace is a synced git repo (the user pointed `$MTG_HOME` at a private `mtg-data` clone),
-use the **mtg-sync** skill at the edges of this build — **pull before, push after** — the same way
-card data comes from mtg-db:
+Decks live in the user's `mtg-data` git repo, and the user wants **every build to pull at the start
+and push at the end** — the same way card data comes from mtg-db. **Don't try to judge whether
+syncing is set up before acting — always run the sync commands and let the helper tell you.**
+`sync.py` returns `skipped` when the workspace isn't a git repo, so an unconditional call is safe
+everywhere; guessing whether to run it is exactly what makes pushing flaky.
 
 - **At the start**, before reading the collection or writing anything, invoke **mtg-sync** to pull
   (`--pull`). This first brings down decks/collection built on another machine.
-- **After saving the deck's files**, invoke **mtg-sync** to push
-  (`--push -m "<commander / archetype>"`), so the new deck is available everywhere.
+- **As the final action of the build** (see **Final step — always commit & push** at the end of this
+  skill), invoke **mtg-sync** to push (`--push -m "<commander / archetype>"`), so the new deck lands
+  on the repo's main branch and is available everywhere. This push runs **every time**, not only when
+  you think sync is configured.
 
-**Best-effort — never block the build.** If sync reports `skipped` (syncing isn't set up) or `FAILED`
-(e.g. offline), note it in one line and continue; the deck is saved locally and can be pushed later.
-To set syncing up for the first time, use the **mtg-sync** skill.
+**Only the *result* is best-effort.** If the push reports `skipped` (syncing isn't set up) or
+`FAILED` (e.g. offline), note it in one line and continue — the deck is saved locally and can be
+pushed later. Never skip the *attempt*. To set syncing up the first time, use the **mtg-sync** skill
+(`--bootstrap`).
 
 ## Before you build: always confirm bracket and budget
 
@@ -306,3 +311,22 @@ restrictions — see `references/brackets.md`); within budget if a cap was set. 
 
 **Include the rating:** `deck.md` must carry the **Deck Rating** section from Step 9 — the overall ★ rating
 at the bracket and the per-dimension scorecard. Don't deliver a deck without it.
+
+## Final step — always commit & push (every build ends here)
+
+This is the step that gets missed, so treat it as part of the deliverable, not an afterthought.
+**After the two files are written and presented, the last thing you do — every single time — is push
+them** by invoking the **mtg-sync** skill: `--push -m "<commander / archetype>"`.
+
+Run it **unconditionally**. Do *not* first reason about whether the workspace is a synced repo — just
+run it. The helper handles every case and reports back:
+
+- **`ok` (committed + pushed)** → confirm in one line that the deck was pushed to the `mtg-data` repo's
+  main branch.
+- **`skipped`** → the workspace isn't a synced git repo; say so in one line and stop (offer
+  `--bootstrap` via mtg-sync if they'd like syncing set up).
+- **`FAILED`** → e.g. offline or an auth issue; say so in one line — the deck is committed/saved
+  locally and can be pushed later.
+
+Only the *handling of that result* is best-effort. The **attempt is mandatory** — never end a build
+without running the push.

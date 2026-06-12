@@ -155,9 +155,10 @@ The workspace holds three subfolders:
   MTG Arena Standard under `.mtg/decks/std/`. Each deck gets its own folder there (e.g.
   `.mtg/decks/edh/atraxa-praetors-voice/`) holding its two files, `deck.md` (annotated) and
   `import.txt` / `arena.txt` (ready to paste).
-- **`.mtg/collection/`** — drop a collection export here (a Moxfield / Archidekt / MTGGoldfish CSV,
-  or a plain `1 Card Name` list) and the builder will prefer cards you already own and flag what you
-  still need to buy.
+- **`.mtg/collection/`** — drop a collection export here and the builder will prefer cards you
+  already own and flag what you still need to buy. Any common shape works — a **`.txt`** list
+  (`1 Card Name` / `4 Lightning Bolt`), a **`.csv`** with name/quantity columns (Moxfield / Archidekt /
+  MTGGoldfish / Arena exporters), or a **`.json`** export — the skills parse all three automatically.
 - **`.mtg/database/`** — the **local Scryfall card database** (`cards.sqlite` + `meta.json`), built
   automatically on first use (a one-time ~540 MB download that becomes a ~170 MB SQLite file). Skills
   query this instead of the Scryfall API, so builds are fast and don't get rate-limited. It's refreshed

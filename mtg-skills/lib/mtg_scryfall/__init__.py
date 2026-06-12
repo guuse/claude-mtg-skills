@@ -16,6 +16,7 @@ Public API:
     ensure_database(db_path, progress, ask) -> dict           # auto-build-on-demand
     default_db_path() -> str | None                           # <workspace>/database/cards.sqlite
     workspace_paths() -> dict                                 # resolved decks/collection/db dirs
+    load_collection(path) -> dict | None                      # parse a txt/csv/json owned-card export
     sync.status()/pull()/push(msg)/init(url) -> dict          # git-backed workspace sync
     sync.push_database()/pull_database() -> dict              # sync cards.sqlite via Git LFS
 
@@ -30,6 +31,7 @@ from .build import build_database, build_from_json
 from .status import database_status, ensure_database, STALE_AFTER_DAYS
 from .cli import ensure_ready
 from .arena import TIER_CAPS, BASICS, parse_deck, tally_wildcards
+from .collection import find_collection_file, parse_collection, load_collection
 from .validate import validate_commander_import, validate_arena_import
 from . import sync
 
@@ -53,6 +55,9 @@ __all__ = [
     "BASICS",
     "parse_deck",
     "tally_wildcards",
+    "find_collection_file",
+    "parse_collection",
+    "load_collection",
     "validate_commander_import",
     "validate_arena_import",
     "sync",

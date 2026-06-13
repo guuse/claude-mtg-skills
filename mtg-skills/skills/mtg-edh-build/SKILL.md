@@ -7,21 +7,33 @@ description: >-
   picking cards that synergize with a commander, or wants a Commander deck within a budget or at a specific
   power bracket. Triggers on phrases like "build me a commander deck", "EDH deck for [commander]", "brew
   around [legendary creature]", "100-card singleton deck", "help me build my Atraxa deck", or any request
-  that pairs a commander name with deckbuilding. The skill pulls proven cards from EDHREC's JSON API,
-  fills gaps and prices everything via Scryfall (which carries Cardmarket EUR prices), and applies a
-  disciplined 7-step methodology to produce a tuned list with per-card pricing and a budget/bracket target.
+  that pairs a commander name with deckbuilding. The skill grounds the build in comparable proven decklists
+  (EDHREC average/top/theme/budget pages, optionally top Archidekt/Moxfield lists), assembles a solid
+  reference deck for the target bracket ignoring budget first, then budgets down by role-preserving swaps —
+  prices everything via Scryfall (Cardmarket EUR), reports the deck's ACTUAL (strictly determined) bracket
+  with a what's-needed-to-go-up note, and applies a disciplined methodology to produce a tuned list.
 ---
 
 # MTG Commander Deck Builder
 
 This skill builds a complete, well-tuned 100-card Commander deck around any commander the user
 chooses. It combines two things: **proven card data** (what real players actually run, from EDHREC
-via its JSON API, priced through Scryfall) and a **disciplined 7-step building methodology** that turns a
+via its JSON API, priced through Scryfall) and a **disciplined building methodology** that turns a
 pile of synergistic cards into a deck that actually functions — correct card-advantage density, enough
 ramp, enough interaction, the right land count, a sensible curve, and real win conditions.
 
 A deck is not a list of the 99 most powerful cards in a color. It is a machine where the parts reinforce
 each other. The whole job of this skill is to build that machine.
+
+**The build is grounded in comparable real decklists, and the budget is hit by reduction, not by starting
+cheap.** First pull the comparable proven lists for the commander and justify every inclusion by its
+presence/inclusion-rate there or a clear synergy reason. Then assemble a **solid reference deck for the
+target bracket *ignoring budget*** (allow a high ceiling — up to ~€1000 if that's what "solid" takes), and
+only then **budget down** by swapping expensive cards, most-expensive-first, for cheaper cards that fill the
+**same role/synergy**. If the budget can't be met while keeping the deck solid at the target bracket, say so
+and step down a bracket rather than shipping a deck weaker than it claims. Full detail in
+`references/methodology.md` — read it. Always report the deck's **actual** bracket (strictly determined per
+`references/brackets.md`), not just the target.
 
 **Build it with the user, not just for them.** After you've settled the commander and found the synergy
 engine, check in on the **direction** before committing to a full 99, and present the near-final list for
@@ -35,10 +47,17 @@ Always produce **two files** at the end (the user expects both):
 
 1. **An annotated decklist** (`<commander>-deck.md`) — cards grouped by role (Commander, Lands, Ramp,
    Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing the card name, mana
-   value, a one-line reason it's in the deck, and its Cardmarket price in EUR. Include the category
-   counts, the total deck price, the target bracket, a short "how the deck wins" paragraph, and a
-   **Deck Rating** section — an overall ★ rating (out of 5) for the deck at its bracket plus the
-   per-dimension scorecard (see "Step 9 — Rank the finished deck").
+   value, a one-line reason it's in the deck (its inclusion-rate in the comparable lists or its synergy
+   points of contact), and its Cardmarket price in EUR. Include the category counts, the total deck price,
+   a short "how the deck wins" paragraph, and these **build-transparency** sections:
+   - **Reference (pre-budget) base** — the solid target-bracket deck before budgeting, with its total price.
+     (Omit only if the user set no budget cap.)
+   - **Budget swaps** — every reduction as **cut `<card>` (€X) → add `<card>` (€Y)** with the shared
+     role/synergy, plus the final price vs. the cap. (Omit if no cap.)
+   - **Actual bracket** — the bracket the deck *actually is* by `references/brackets.md` (with the Game
+     Changer count and combo/MLD/extra-turn confirmation), stated against the target if they differ, and a
+     **"what's needed to go up one bracket" (and what would drop it)** note.
+   - **Deck Rating** — an overall ★ rating at its bracket plus the per-dimension scorecard (see "Step 10").
 2. **A plain importable list** (`<commander>-import.txt`) — one card per line as `1 Card Name`, ready to
    paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
@@ -112,18 +131,23 @@ always ask, unless they already stated both):
 
 - **Power bracket (1–5)** — the official Commander power framework. This governs how efficient the
   interaction is, how many (if any) Game Changers are allowed, and whether fast/infinite combos are okay.
-  See `references/brackets.md` for the definitions and how to enforce them. Default to **Bracket 2–3** if
-  the user is unsure.
+  See `references/brackets.md` for the definitions and the **strict determination logic**. Default to
+  **Bracket 2–3** if the user is unsure. Note this is the **target**; you will report the deck's **actual**
+  bracket at the end (and they can differ — a well-tuned deck with 0 Game Changers / no combos / no MLD is
+  **Bracket 2**, not 3, however optimized it is).
 - **Budget cap** — a total deck budget in EUR (Cardmarket pricing), or "no cap". This decides whether you
   reach for staples or for budget substitutes, and it constrains the land base most of all.
 
 If the commander is also unknown ("just build me something fun"), help them pick one first using Step 1.
 
-## The seven steps
+## The steps
 
-Work through these in order. Steps 2 and 6 carry the most weight — the synergy-finding in Step 2 is what
-makes the deck *yours*, and the cutting in Step 6 is what makes it *function*. Full detail, rubrics, and
-the reasoning behind every number live in `references/methodology.md`; read it before building. The
+Work through these in order. **Phase A first:** before Step 1, pull the **comparable proven decklists** for
+the commander (EDHREC average/top/theme/budget via `scripts/edhrec_fetch.py`, optionally a top
+Archidekt/Moxfield list) and keep them open — they are the build's backbone, and every inclusion is justified
+by its inclusion-rate there or a clear synergy reason. Steps 2 and 6 carry the most weight, and **Step 8 (build
+the solid reference deck, then budget down)** is what makes the price honest. Full detail, rubrics, and the
+reasoning behind every number live in `references/methodology.md`; read it before building. The
 **synergy-scoring loop that governs Step 2** (read → extract → map to tags → intersect → score, with the
 ≥2–3-points-of-contact rule) is in `references/synergy.md` — read it too. The Scryfall query cookbook for
 each step is in `references/scryfall-syntax.md`.
@@ -151,10 +175,12 @@ each within the commander's identity and **intersect** — cards appearing under
 multi-synergy hits. **(5) Score** each candidate by its points of contact and keep the densest.
 
 A good test of the result: *could this deck win without ever casting the commander?* If yes, the 99 are
-pulling their weight. Source candidates **primarily from EDHREC's JSON API** (`scripts/edhrec_fetch.py` —
-its high-"synergy" ranking is exactly this signal), then use **Scryfall to fill gaps** and surface spicy multi-synergy cards the
-aggregate buries. Gather ~40 themed candidates; you'll cut later. Apply the mana-value rubric in
-`references/methodology.md` as a first filter (expensive cards must earn their slot).
+pulling their weight. Source candidates **from the Phase-A comparable lists first** (`scripts/edhrec_fetch.py`
+— the average deck, top, and high-"synergy" cards, each with an inclusion-rate you can cite), then use
+**Scryfall to fill gaps** and surface spicy multi-synergy cards the aggregate buries (held to the ≥2–3 contact
+bar). Gather **more than you'll keep** (~40+ themed candidates) so the reference deck has room; you'll cut
+later. Apply the mana-value rubric in `references/methodology.md` as a first filter (expensive cards must earn
+their slot).
 
 **Check in on the direction here.** Before sinking time into the full build, tell the user the plan in a
 couple of sentences — the theme/engine you're leaning into, how the deck intends to win, and a handful of
@@ -192,25 +218,44 @@ likely close the game. If a win con is missing, use Scryfall (search the command
 power, "loses life", artifact, etc.) to find the perfect closer and swap it in. Iterate until the deck has
 a clear, repeatable path to victory.
 
-### Step 8 — Present the list and refine before writing files
-**Show the user the finished list before you save anything.** Walk them through it briefly — the category
-counts, how it wins, the priciest cards, and any close calls you made (the "I kept X over Y because…"
-choices) — and invite changes: pet cards to slot in, cards to cut, more or less power, a tighter budget.
-Make the swaps they ask for (re-checking the category counts and budget each time) and keep going until
-they're happy. **Only then** run the quality checks below, rank the deck (Step 9), and write the two files.
+### Step 8 — Assemble the solid reference deck (ignore budget), then budget down
+What you have after Steps 1–7, with the **best** cards the comparables and synergy point to and **budget set
+aside**, is the **reference deck** — the strongest honest version for the target bracket (allow a high
+ceiling, up to ~€1000 if that's what solid takes). **Determine its actual bracket** (`references/brackets.md`)
+and confirm it equals the target; pull back anything that drifted above (e.g. a 4th Game Changer or an early
+combo) — that's a bracket fix, not a budget one.
 
-### Step 9 — Rank the finished deck (★ rating)
+Then, **only if a budget cap was set, budget down** (full algorithm in `references/methodology.md`): sort the
+non-basics most-expensive-first and, for each, find a **cheaper card serving the same role/synergy** (same
+function, color identity, comparable effect, ideally also in the comparable lists) and swap it — recording
+**cut (€X) → add (€Y)** and the shared role, re-checking counts and bracket each time. If no adequate cheaper
+substitute exists without weakening the deck's function or bracket, **leave that card and move on.** Repeat
+until the budget is met or no beneficial swaps remain. **If the budget cannot be met while keeping the deck
+solid at the target bracket, STOP, tell the user plainly, then step DOWN one bracket and rebuild/re-evaluate
+there**, explaining why and what the lower bracket gets them. Keep the reference base and the swap log to show.
+
+### Step 9 — Present the list and refine before writing files
+**Show the user the finished list before you save anything** — including the **reference base, the budget
+swaps, the final price, the actual bracket, and the move-up note**. Walk them through it briefly (category
+counts, how it wins, the priciest cards, close calls) and invite changes: pet cards, cuts, more/less power, a
+tighter budget. Make the swaps they ask for (re-checking counts, budget, and bracket each time) and keep going
+until they're happy. **Only then** run the quality checks below, rank the deck (Step 10), and write the files.
+
+### Step 10 — Rank the finished deck (★ rating)
 Once the list is locked, **rate it before writing files** and embed the result in `deck.md`. Run
 `python "${CLAUDE_SKILL_DIR}/scripts/analyze_deck.py" <import>.txt --commander "<name>" --json` on the final
 list to pull the objective stats (curve, land/ramp/draw/interaction counts you can reconcile against your
 build, the **EDHREC-rank staple signal**, Game Changer count, off-identity check, total EUR), then apply the
 **five-dimension rubric in `references/rating.md`** — structure & consistency, synergy density (via
 `references/synergy.md`), staples & card quality, win conditions, and bracket calibration — to award an
-overall ★ rating *at the target bracket*. This is the same method as the dedicated **mtg-edh-analyze** skill;
-defer to it if you prefer. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★★☆ (4/5) — a
-strong Bracket 3 deck`), the per-dimension scorecard with the numbers behind each, and one line on the
-deck's biggest remaining weakness. Since you built to the bracket, a healthy build should rate well — if it
-doesn't, fix the flagged gap before delivering rather than shipping a low score.
+overall ★ rating *at the deck's actual bracket*. The rubric is **strict and evidence-based**: a deck that
+merely *functions* is **★★★ (3)**, not 4, and **4–5 must be earned against the comparable lists** (score the
+Staples and Synergy dimensions off the inclusion-rate / rank data from Phase A, and round **down** when the
+evidence is thin). This is the same method as the dedicated **mtg-edh-analyze** skill; defer to it if you
+prefer. Write a **Deck Rating** section into `deck.md`: the headline (e.g. `★★★½ (3.5/5) — a solid Bracket 2
+deck`), the per-dimension scorecard with the numbers/evidence behind each, and one line on the deck's biggest
+remaining weakness. Don't inflate the score because you built the deck — if it only rates 3, say 3 and name
+what a comparable top list does better.
 
 ## How to drive the data sources
 
@@ -288,11 +333,16 @@ pieces of card advantage) as red flags to fix, not features.
 ## Budget and pricing
 
 - Price every non-basic card with its Scryfall `prices.eur` (Cardmarket, EUR). Basics are free. Sum for
-  the deck total and show it in the annotated file.
-- If a budget cap is set and the draft list exceeds it, trim from the most expensive cards that are
-  **not** load-bearing, and use Scryfall to find cheaper cards with the same role/synergy (e.g. swap an
-  expensive dual land for a tapland or basic; swap a premium board wipe for a budget one). The land base
-  is usually where the most money hides, so look there first.
+  the deck total and show it in the annotated file — for both the **reference base** and the **final** deck.
+- **Hit a budget cap by reducing the reference deck, not by starting cheap** (Step 8 / `methodology.md`):
+  iterate the non-basics most-expensive-first and swap each for a **cheaper card serving the same
+  role/synergy** (same function, color identity, comparable effect, ideally also in the comparable lists).
+  The land base is usually where the most money hides (premium duals → taplands/basics), so the top of the
+  price list yields the biggest savings first. If no adequate cheaper substitute exists without weakening the
+  deck, **leave that card** and move on. If the cap can't be met while keeping the deck solid at the target
+  bracket, **stop and step down a bracket** rather than shipping a weaker deck under a higher label.
+- Show **every swap** as **cut `<card>` (€X) → add `<card>` (€Y)** with the shared role, plus final price vs.
+  cap.
 - Note honestly that `prices.eur` is Cardmarket market price and can move; for an exact Cardmarket
   *average sell* on a specific pricey card, the user can check that card's Cardmarket page directly.
 
@@ -309,14 +359,16 @@ Changer, or a combo piece above the bracket) reappearing in the import list.
 
 Then re-read `references/methodology.md` and confirm: exactly 100 cards including the commander; ~38 lands;
 ≥12 net-positive card-advantage pieces; ≥10 ramp; ~10 interaction + 2–4 wipes; 3–4 real win conditions;
-every card legal in the commander's color identity; bracket rules satisfied (Game Changer count, combo
-restrictions — see `references/brackets.md`); within budget if a cap was set. Only then present the files.
+every card legal in the commander's color identity; the deck's **actual bracket** determined per
+`references/brackets.md` (Game Changer count + combo/MLD/extra-turn limits) and matching the target (or the
+difference stated); the **reference base, budget swaps, final price, actual bracket, and move-up note** all
+present; within budget if a cap was set (or the honest stop reported). Only then present the files.
 
 **Double-check colors:** confirm every card's color identity is within the commander's — vet with
 `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and glance at the search
 **CI** column for each card. A single off-identity pip makes the card illegal in the deck.
 
-**Include the rating:** `deck.md` must carry the **Deck Rating** section from Step 9 — the overall ★ rating
+**Include the rating:** `deck.md` must carry the **Deck Rating** section from Step 10 — the overall ★ rating
 at the bracket and the per-dimension scorecard. Don't deliver a deck without it.
 
 ## Final step — always commit & push (every build ends here)

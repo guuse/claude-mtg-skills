@@ -40,6 +40,16 @@ https://json.edhrec.com/pages/commanders/<slug>/budget.json   # the budget build
 https://json.edhrec.com/pages/average-decks/<slug>.json        # a literal ~100-card average decklist
 ```
 
+**Comparable real decklists (the build/upgrade backbone, and the rating's evidence).** Grounding a build,
+upgrade, or rating in *comparable proven lists* means pulling, for the commander: the EDHREC **average** deck
+(`average-decks/<slug>.json`), the **top/staple + high-synergy** cards (`commanders/<slug>.json`), and the
+relevant **theme** and **budget** pages (`<slug>/<theme>.json`, `<slug>/budget.json`). These are the primary
+comparables — read **inclusion rates and ranks** off them. **Optionally** corroborate with a couple of top
+published lists for that commander via the Archidekt/Moxfield JSON APIs below (`import_deck.py <url>`); never
+scrape their HTML. This inclusion-rate / rank evidence is what every "justify this card" claim and the
+staples/synergy scores cite — when you can't pull it, say so, treat proven-inclusion claims as
+lower-confidence, and rate **DOWN** (see `rating.md`).
+
 Slug = lowercase, drop `' , .`, every other run of non-alphanumerics → `-`
 (*Atraxa, Praetors' Voice* → `atraxa-praetors-voice`). Request pattern: `User-Agent`
 + `Accept: application/json`, HTTPS. **Do NOT** fetch the HTML at `edhrec.com` or the

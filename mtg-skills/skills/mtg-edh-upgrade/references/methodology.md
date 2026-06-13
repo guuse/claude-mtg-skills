@@ -1,192 +1,127 @@
-# Deckbuilding Methodology — Detail and Reasoning
+# Deckbuilding Methodology — Detail and Reasoning (upgrade)
 
-This is the full version of the 7-step process the SKILL.md summarizes. Read it before building. The
-numbers here are guidelines tuned from experience, not laws — but deviating far from them usually breaks
-the deck, so deviate deliberately and know why.
+This is the full version of the process the SKILL.md summarizes. Read it before diagnosing or upgrading. The
+numbers here are guidelines tuned from experience, not laws — but deviating far from them usually breaks the
+deck, so deviate deliberately and know why.
 
-The single most important idea: **a Commander deck is a machine, not a top-99 list.** Cards earn their
-slot by reinforcing the commander *and each other*. A useful north star — *could this deck win even if you
-never cast your commander?* If the answer is yes, your 99 are synergizing properly and the deck is
-resilient to having its commander removed.
+The single most important idea: **a Commander deck is a machine, not a top-99 list.** Cards earn their slot by
+reinforcing the commander *and each other*. A useful north star — *could this deck win even if you never cast
+your commander?* If yes, the 99 are synergizing properly and the deck is resilient to having its commander
+removed.
 
----
-
-## Step 1 — Pick / confirm the commander
-
-The commander is the most impactful single choice because it sets two things:
-
-- **Color identity** — the set of colors (W/U/B/R/G) appearing in the commander's mana cost *or* rules
-  text. Every other card in the deck must fit inside that identity. A mono-color commander unlocks tons of
-  basics and colorless utility; a 3–5 color commander forces a fixing-heavy land base.
-- **The engine** — what the deck *does* turn to turn to generate advantage and eventually win.
-
-Two selection rules, in tension, both matter:
-1. **Rule of cool** — pick what's genuinely fun for the user (favorite character, art, play pattern). Fun
-   is the actual goal of the format.
-2. **Don't be oppressive** — avoid commanders/strategies that stop opponents from playing (hard stax,
-   heavy land destruction, fast non-interactive combo) unless the table wants that. Oppressive decks get
-   focused and you stop having fun too.
-
-Always pull the commander's real Oracle text (Scryfall `--named`) so Step 2 works from exact wording.
+For an upgrade, the second governing idea is: **diagnose against comparable real decklists, then make
+role-preserving swaps that respect the budget and the deck's actual bracket.** An upgrade is not a rebuild — a
+few well-chosen swaps often improve a deck far more than their cost suggests.
 
 ---
 
-## Step 2 — Find the themed cards (the synergy engine)
+## Phase A — Ground the diagnosis in comparable real decklists (do this FIRST)
 
-This is where decks are won or lost. The method:
+Before judging the deck, **pull the comparable proven decklists for this commander** and keep them open. They
+are the benchmark the current list is measured against, and the source of upgrade candidates.
 
-**A. Break the commander into keywords.** Read each ability and extract every actionable concept. Example
-— a commander that says *"Whenever this enters or attacks, you may sacrifice another creature or artifact;
-if you do, put two +1/+1 counters on it,"* and *"When it leaves the battlefield, put its counters on
-target creature you control,"* yields keywords: **enters, attacks, sacrifice creature, sacrifice artifact,
-+1/+1 counters, leaves the battlefield, counters, target creature you control.** That's the shopping list.
+Pull (see `references/data-sources.md`, `scripts/edhrec_fetch.py`):
 
-**B. Hunt for multiple overlapping synergies.** Don't add a card because it hits *one* keyword — thousands
-do. Add cards that hit **several** and that also play well with other cards you're adding. The more points
-of contact a card has with the deck, the more often it does something great, and the more the deck "comes
-alive" with emergent interactions. This is also what makes each game different and fun.
+- the **EDHREC average deck** (`--average`),
+- the **top / staple + high-synergy cards** (`edhrec_fetch.py "<commander>"`) with **inclusion rates / ranks**,
+- the relevant **theme** (`--theme <slug>`) and **budget** (`--budget`) pages,
+- **optionally** one or two top published lists via `scripts/import_deck.py <url>`.
 
-  *Example of multi-synergy:* an enchantment that (a) flickers a creature when it enters, (b) tracks your
-  creatures entering with counters, and (c) periodically exiles-and-returns one of your creatures hits
-  *enters*, *leaves the battlefield*, and re-trigger-your-ETB all at once — three points of contact.
-
-**C. Source proven cards first, then fill.** Start from **EDHREC's JSON API** via `scripts/edhrec_fetch.py`
-(top cards and high-"synergy" cards for this commander; `--average`/`--theme`/`--budget` for full lists and
-variants). These reflect what actually wins. (See `references/data-sources.md` — never scrape EDHREC's HTML;
-on a 403/404 fall back to the local Scryfall DB ordered by EDHREC rank and say so.) Then use **Scryfall** to (1) fill keyword gaps the popular lists underweight, (2) find
-budget/bracket-appropriate swaps, and (3) discover spicy multi-synergy cards the aggregate data buries.
-
-**D. First-pass cut by the mana-value rubric.** Apply this as you gather (~40 candidates):
-
-- **MV 6+** — must *dramatically* change the board the turn it lands or give an near-insurmountable
-  advantage within one turn. A dead 6-drop in hand is the worst feeling in the deck. No exceptions.
-- **MV 5** — must provide a dramatic immediate advantage, or be a threat that runs away with the game in a
-  few turns if unanswered.
-- **MV 4** — must be powerful *and* highly synergistic; a piece that shifts the deck into overdrive or
-  sets up a huge next few turns.
-- **MV 1–3** — should be repeatable **engine** pieces that keep giving value turn after turn, not just the
-  turn they're cast.
-
-Keep ~40 themed candidates after this pass. You will cut to fit in Step 6. Also cut anything that reads as
-"too rude" for the table/bracket.
+**Every add must be justified** by its inclusion-rate in the comparables *or* a named synergy reason
+(`references/synergy.md`). Every **gap** in the current deck is "the comparable lists run X, this one
+doesn't." If EDHREC is unreachable, fall back to the local Scryfall DB by EDHREC rank, say the proven-inclusion
+data is lower-confidence, and lean on explicit synergy justification.
 
 ---
 
-## Step 3 — Card advantage (the hidden engine)
+## The target shape (what you diagnose against)
 
-The most underrated lever. Three rules: **density, synergy, curve.**
+- **Step 1 — Commander.** Confirm the commander, its **color identity** (the only colors legal in the 99), and
+  its engine; pull the real Oracle text (`--named`). Don't impose a new plan — sharpen the existing one unless
+  the user asks to re-pivot.
+- **Step 2 — Synergy engine.** Run the **synergy-scoring loop in `references/synergy.md`** (read → extract →
+  map to Scryfall tags → search → intersect → score). Every *themed* card must clear **≥2–3 points of
+  contact**; a one-note card is a cut candidate. (Structural slots — lands, generic ramp, catch-all
+  interaction — are exempt, but prefer the version that also synergizes.)
+- **Step 3 — Card advantage.** **≥12** net-positive pieces (replace themselves *and* draw more); ~8 at MV ≤ 3,
+  ~4 at MV ≥ 4 drawing explosively. Loot/rummage doesn't count.
+- **Step 4 — Ramp.** **~10–11** efficient pieces (rocks/dorks/land ramp), cheaper-is-better, + a few explosive.
+- **Step 5 — Interaction.** **~10** dedicated + **2–4** board wipes; scale efficiency to the bracket.
+- **Step 6 — Lands.** **~37–38** (36–37 only with a low curve + cheap draw); color-fixing majority in
+  multicolor decks.
+- **Step 7 — Win conditions.** **3–4** real, repeatable, resilient closers that win from a normal board.
 
-**Density.** At least **12** cards dedicated to card advantage; strong decks often run 16–17. "Dedicated"
-means the card's job is to net you cards.
-
-**What counts.** Only *net-positive* advantage. A card must replace itself **and** draw at least one more —
-minimum +1 net, i.e. it sees you two cards. *Faithless Looting* (draw 2, discard 2) is card *filtering*,
-not advantage; it puts you down a card. Loot/rummage/impulse effects are fine in the deck but don't count
-toward the 12.
-
-**Synergy.** Prefer advantage that also ties into the theme (e.g. in a sacrifice deck, "draw a card
-whenever a creature dies"). You extract value twice and it's more fun to pilot.
-
-**Curve.** Of ~12 pieces, aim for **~8 at MV ≤ 3** and **~4 at MV ≥ 4**. The cheap ones are steady drip
-(draw 1–2, or "draw a card each turn"); the expensive ones must draw **explosively** (5–6+ at once) to
-justify the cost. Card advantage keeps the deck flowing — you always have gas, answers, and options.
-
----
-
-## Step 4 — Ramp
-
-Ramp accelerates your mana beyond the one-land-per-turn baseline, letting you deploy bigger threats sooner.
-Because Commander starts at 40 life, games run long and ramping early compounds hard — if opponents ramp
-and you don't, you fall behind.
-
-**Normal ramp: ~10–11 pieces minimum.** Three common kinds: **mana rocks** (artifacts), **mana dorks**
-(creatures), **land tutors/ramp** (fetch lands to the battlefield). Bias toward **efficiency** — a 1-MV
-rock beats a 2-MV rock beats a 3-MV rock, all else equal. Run more than 11 if the commander/curve is
-expensive or the bracket is higher. Exceptions to "cheaper is better": a pricier piece with strong theme
-synergy, or a deck that genuinely wants big mana.
-
-**Explosive ramp: a few pieces.** Effects that *multiply* a turn's mana — doublers/triplers, rituals,
-mass treasure, free-cast enablers, mass-land-into-play. Each color does this differently (green: dorks,
-doublers, land floods; red: rituals/treasure; black: rituals, pay-life, special lands; blue: free-cast
-enchantments; white: more setup-heavy but exists). Normal ramp carries the early game; explosive ramp
-helps close. For higher brackets, run 3–4 explosive pieces instead of 1–2.
+The **mana-value rubric** still governs which cards earn slots: MV 6+ must dramatically swing the board the
+turn it lands; MV 5 a dramatic immediate advantage; MV 4 powerful *and* synergistic; MV 1–3 repeatable engine
+pieces.
 
 ---
 
-## Step 5 — Interaction
+## Step A — Diagnose: where is the deck below the comparable shape?
 
-Interaction is what stops you from dying and stops opponents from winning. More (and more efficient)
-interaction makes a stronger deck — but *too much* makes games miserable for everyone, so balance to the
-bracket.
+Tally the current list against the targets above and against the comparables' inclusion rates. Note the
+**biggest gaps** — too few lands, thin card advantage, not enough/inefficient interaction, a top-heavy curve,
+no clear closer, or low-inclusion filler where the proven lists run high-inclusion staples. Reconcile this
+with what the user told you they struggle with, and **agree the top 2–3 priorities together** before proposing
+cards. Their lived pain points outrank your tally where they conflict — but raise anything your tally surfaces
+that they didn't mention.
 
-Four kinds:
-- **Removal** — destroy/exile a permanent (e.g. exile a creature).
-- **Interruption** — counterspells; stop something before it resolves.
-- **Protection** — shield you or your key pieces (hexproof, indestructible, fogs).
-- **Board wipes** — mass removal that resets the table.
+## Step B — Determine the deck's ACTUAL bracket (before and after)
 
-**Counts:** ~**10 dedicated** interaction pieces + **2–4 board wipes.** If the theme provides incidental
-interaction (e.g. removal stapled to your creatures' ETBs), reduce the dedicated count by 1–2 so you don't
-flood. Higher brackets → more and more-efficient interaction (cheap instant-speed answers, free spells).
-Lower brackets (1–3) → you can run more synergistic/situational interaction that's fun over pure
-efficiency.
+Using the determination logic in `references/brackets.md`, compute the bracket the **current** list actually
+is — the **floor set by its most powerful signals** (Game Changer count, early two-card combos, MLD, chained
+extra turns, fast mana + tutor density), not a vibe. A tuned, optimized deck with **0 Game Changers, no early
+combo, no MLD** is **Bracket 2**, not 3 — don't inflate it. Compare to the user's **target** bracket and state
+any difference plainly. After the swaps, recompute the actual bracket so the upgrade doesn't silently push the
+deck past (or pull it below) where the user wants it.
 
----
+## Step C — Choose adds, then role-preserving cuts
 
-## Step 6 — Lands, then cut to exactly 100
+For each gap, gather candidates **from the comparable lists first**, then fill with Scryfall for budget- and
+bracket-appropriate options (`references/scryfall-syntax.md`). Favor cards that fix a real weakness *and*
+synergize. For every **add**, name the **cut**: the weakest card serving the same or a lower-priority role
+(off-theme filler, an overcosted card the curve doesn't need, a win-more card, a strictly-worse duplicate).
+Keep the deck at exactly **100**. Don't cut the user's flagged favorites unless they're clearly hurting the
+deck — and if so, explain and offer the choice.
 
-**Land count: ~37–38.** This feels high to newer builders, but missing land drops is devastating to win
-rate. Hold the line at ~38 unless the deck has an unusually low curve and lots of cheap card draw/ramp, in
-which case 36–37 can be fine.
+## Step D — Respect the budget by role-preserving substitution
 
-**Basics vs non-basics** depends on colors:
-- **Mono-color:** mostly basics + a healthy package of **colorless utility lands** (lands that do things).
-- **Two colors:** a fixing core (duals, taplands) + basics.
-- **Three to five colors:** the **majority** of lands must be color-fixing; you still run ~38. Budget caps
-  bite hardest here — premium duals are where the money is, so substitute taplands/basics under a cap.
+Keep the running upgrade spend under the cap. When a high-impact add would blow the budget, **find a cheaper
+card serving the SAME role/synergy** — same function, same color identity, comparable effect, ideally also
+seen in the comparable lists (`function:<role> id<=<colors>` filtered by `eur<X`/`usd<X`). Record each swap as
+**cut `<card>` (€X) → add `<card>` (€Y)** with the **shared role**. If no adequate cheaper substitute exists
+without weakening the deck's function or bracket, **leave the current card and move to the next priority** —
+don't swap in something worse just to spend the budget.
 
-**Then cut to 100.** Tally every fixed category (commander + lands + ramp + card advantage + interaction).
-Subtract from 100 to learn how many **themed cards** survive. Sort the themed pile by mana value and cut:
-- **Curve first** — keep only **3–4** truly expensive (MV 6+) cards; drawing multiple uncastable bombs is
-  miserable. Push the rest of the curve low. Consider the commander's own cost and play pattern: if you'll
-  usually cast the commander instead of another 3-drop, lighten the 3s and add 2s/4s. If the commander is
-  a setup piece you want *out* before you do things, load the 1–3 slots so the board is ready when it lands.
-- **Affinity second** — when torn between two comparable cards, keep the one with **more synergy with the
-  rest of the deck**. Affinity beats raw power for fun and consistency. If one card is just too cool to
-  cut, slam it; one indulgence is fine.
+### When the target can't be reached within the budget (the honest stop)
 
----
+If the upgrade budget **cannot** lift the deck to a solid version of the target bracket — every remaining
+high-impact fix is load-bearing with no adequate cheaper substitute — **STOP and tell the user plainly.** Then
+either propose a larger budget for the specific cards that would do it, or **target one bracket lower**,
+explain why the original wasn't reachable at that spend, and re-evaluate there (a lower bracket's
+card-quality demands are lower, so cheaper substitutes that were inadequate at B3 may be fine at B2). Never
+silently ship an upgrade that claims a bracket the deck doesn't actually reach.
 
-## Step 7 — Goldfish and lock in win conditions
+## Step E — Re-check and report
 
-"Goldfishing" = playing the deck solo, no opponent, making realistic plays (don't pretend a 1/1 always
-connects). Play to ~**turn 7** and read the board.
-
-Ask two questions:
-1. **With this typical board and hand, could I actually win?**
-2. If not, **is there a single card I could draw next turn that wins from here?**
-
-If the answer to both is "not really," the deck lacks a closer for its own best board state. Use Scryfall
-to find one: search the deck's **payoff keywords** (e.g. for a counters/sacrifice deck:
-`o:"loses life" o:power`, `o:"each opponent"`, artifact/aristocrat finishers) within the color identity,
-and slot the perfect closer in for the weakest themed card.
-
-Keep goldfishing until you understand the deck's lines and have **3–4 win conditions** — cards that, given
-the deck's normal big board, very likely end the game. Multiple win cons make the deck resilient to having
-one answered. Common closers: a finisher that drains all opponents off your board's size, a big evasive
-threat plus a counter-doubler, a mill/overrun payoff, or a combo the bracket allows.
+Re-check the category counts and the actual bracket after the swaps. Report: the **before → after** shape, the
+**Changes** (cut → add, reason, €cost, running spend vs. cap), the **final actual bracket** with Game-Changer
+count and combo/MLD/extra-turn confirmation, and the **move-up / move-down** note (`brackets.md`). Then the ★
+rating before → after (`references/rating.md`) — remember a deck that merely *functions* is 3 stars; 4–5 must
+be earned against the comparable lists.
 
 ---
 
 ## Sanity checklist (run before delivering)
 
-- [ ] Exactly **100** cards including the commander.
-- [ ] **~38** lands (36–38 acceptable; justify anything lower).
-- [ ] **≥12** net-positive card-advantage pieces, ~8 cheap / ~4 expensive.
-- [ ] **~10–11** ramp pieces + a few explosive; efficient curve.
-- [ ] **~10** dedicated interaction + **2–4** board wipes.
-- [ ] **3–4** genuine win conditions.
+- [ ] Diagnosis grounded in **comparable real decklists** (inclusion rates / ranks); gaps named against them.
+- [ ] **Actual bracket** determined before and after (`brackets.md`); stated vs. the target; not inflated for
+      being "tuned."
+- [ ] Every add justified by inclusion-rate or a named synergy reason; every themed add clears **≥2–3 points
+      of contact**.
+- [ ] Budget respected by **role-preserving swaps** (or the honest stop / step-down was reported).
+- [ ] Exactly **100** cards including the commander; cuts and adds net to zero.
+- [ ] **~38** lands; **≥12** net-positive card advantage; **~10–11** ramp; **~10** interaction + **2–4** wipes;
+      **3–4** win conditions; sensible curve (only 3–4 at MV 6+).
 - [ ] Every card inside the commander's **color identity**.
-- [ ] **Bracket** rules satisfied (Game Changer count, combo/MLD limits — see `brackets.md`).
-- [ ] Within **budget** if a cap was set; total price shown.
-- [ ] Curve sensible: only 3–4 cards at MV 6+.
+- [ ] **Move-up / move-down** note included; ★ rating shown before → after.

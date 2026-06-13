@@ -1,65 +1,102 @@
-# Commander Brackets and Game Changers
+# Commander Brackets — Official Determination (strict, not vibes)
 
-The Commander Brackets system (introduced by the Commander Format Panel / Wizards of the Coast in 2025,
-still iterating) is the official shared language for deck power level, replacing the old fuzzy 1–10 scale.
-Always confirm the user's target bracket before building, because it changes interaction efficiency,
-combo choices, and which high-impact cards are allowed.
+The Commander Brackets system (WotC's Commander format panel; beta launched **February 2025**, refined
+**April 2025**, **October 2025**, and into **2026**) is the official shared language for deck power on a
+**1–5** scale. This file encodes the **official determination logic** — how a deck's bracket is actually
+decided — not a loose paraphrase. Use it to report the bracket a deck *actually is*, then talk about targets.
 
-> The bracket definitions and especially the **Game Changers list change over time**. Treat the summary
-> below as a working baseline, and when precision matters (e.g. the user wants a tight Bracket 3 build),
-> verify the current rules and list — `web_search` "official Commander brackets update" and the current
-> Wizards announcement, and use Scryfall's `is:gamechanger` filter to identify Game Changers in the
-> commander's colors. Don't hardcode a stale list into a deck.
+> **Sources to verify against (the rules and the Game Changers list both change over time):**
+> - WotC Commander Brackets announcements on `magic.wizards.com` — "Introducing Commander Brackets (Beta)"
+>   and the **Apr 22 2025 / Oct 21 2025 / Feb 9 2026** updates.
+> - Moxfield's help article: `https://moxfield.com/help/help-articles/commander-brackets`.
+> - The **Game Changers list** is maintained by WotC and shifts between updates. **Never hardcode a stale
+>   list** — identify Game Changers in a deck with Scryfall's `is:gamechanger` (in the commander's identity:
+>   `is:gamechanger id<=<colors>`). When precision matters, `web_search` the current announcement first.
 
-## The five brackets (working baseline)
+## The five brackets — exact official restrictions
 
-**Bracket 1 — Exhibition.** Ultra-casual, theme/flavor over power. **No Game Changers.** Win conditions
-are incremental and telegraphed; games run long (often 9+ turns). Think tribal flavor, group hug, joke
-themes. Interaction is light and synergistic.
+These are the hard, checkable lines a deck must **not** cross to *stay* in a bracket:
 
-**Bracket 2 — Core.** The "average modern deck" level (roughly where an unmodified recent precon sits,
-though precons vary). **No Game Changers.** No early two-card infinite combos; mass land destruction
-avoided. Wins are telegraphed and disruptable; expect ~8+ turns. This is a great default for "fun but
-functional." Run synergistic interaction, an honest ~10 + 2–3 wipes, no fast combos.
+| Bracket | Game Changers | Two-card infinite combos | Mass land denial | Extra-turn cards | Tutors | Game length |
+|---|---|---|---|---|---|---|
+| **1 — Exhibition** | **0** | none (no intentional) | none | **none** | sparse | ends slowly, long |
+| **2 — Core** | **0** | none (no intentional) | none | low quantity, **not chained/looped** | sparse | ~9+ turns |
+| **3 — Upgraded** | **≤ 3** | none that go off **cheaply within ~the first six turns** (late/conditional combos OK) | **none** | low quantity, not chained/looped | no hard cap (Oct 2025 removed the tutor count) — density is still a *power signal* | a turn or two faster than B2 |
+| **4 — Optimized** | unlimited | unlimited | unlimited | unlimited | unlimited | can end quickly |
+| **5 — cEDH** | unlimited | unlimited | unlimited | unlimited | unlimited | can end any turn; metagame-tuned |
 
-**Bracket 3 — Upgraded.** Tuned, high card-quality decks with strong synergy and real disruption. **Up to
-3 Game Changers** allowed. Still **no early-game two-card infinite combos** and **no mass land
-destruction**. Most "this is my good deck" brews actually live here. Interaction should be more efficient
-and a bit denser; a couple of premium cards are fine within the Game Changer cap.
+Brackets **4 and 5 have no deck-construction restrictions beyond the banned list**; the difference is intent
+and tuning (B5 is built to beat the *competitive* metagame). Brackets **2–3 are by far the most common**.
 
-**Bracket 4 — Optimized.** High power, very consistent, lethal. **No card restrictions beyond format
-legality** — any number of Game Changers, fast combos allowed. Build for speed, consistency, efficient
-interaction, and tight combos/win cons. Not cEDH-meta-tuned, but close in raw power.
+## How a deck's bracket is DETERMINED (the actual logic)
 
-**Bracket 5 — cEDH.** Built to battle the competitive metagame: win fast or generate overwhelming
-resources, using established cEDH tools and decklists. Maximum efficiency, heavy free interaction, tuned
-mana, redundant combos.
+WotC's framing is "play where you belong by the descriptions," but determination is **not** a feeling — it is
+a **floor set by the deck's most powerful signals**. Compute the bracket a deck *actually is* by taking the
+**maximum** floor that any of these signals forces:
 
-(Brackets 2–4 are by far the most common; default to 2–3 if the user is unsure.)
+1. **Game Changer count** (`is:gamechanger` over the 99 + commander):
+   - **0** → raises no floor (deck can be B1/B2).
+   - **1–3** → floor is **Bracket 3**. *Any single Game Changer makes the deck at least B3.*
+   - **4+** → floor is **Bracket 4**.
+2. **Two-card infinite combos.** A combo that assembles **cheaply and can go off within ~the first six
+   turns** → floor **Bracket 4**. A combo that only comes online late (big board / lots of mana / many
+   pieces) is allowed at B3 and does **not** raise the floor by itself.
+3. **Mass land denial** — any intentional MLD (Armageddon / Jokulhaups / Winter Orb–style land stax /
+   repeatable land-destruction loops) → floor **Bracket 4** (B1–3 forbid it).
+4. **Chained / looped extra turns** — extra-turn cards beyond *low quantity*, or built to chain/loop → floor
+   **Bracket 4**. A lone Time Warp as a value card is fine at B2–3.
+5. **Fast mana + tutor density** (judgment signal, not a hard count). Sol Ring is ubiquitous and fine, but a
+   stack of fast mana (Mana Crypt / Mana Vault / Grim Monolith / rituals) **plus** a dense tutor package that
+   makes the deck play the *same* powerful line every game pushes toward **B4** even under the 3–Game-Changer
+   cap. A deck that *consistently goldfishes a turn-3–4 win* is **B4**, whatever its Game Changer count.
 
-## How to enforce a bracket while building
+**The deck's ACTUAL bracket is the highest floor any signal forces.** If every signal is at the bottom —
+**0 Game Changers, no early combo, no MLD, no chained extra turns, light tutoring/fast mana** — the deck is
+**Bracket 2** (or **Bracket 1** only if it's genuinely ultra-casual / theme-first with sub-standard win cons).
 
-1. **Game Changer count.** Pull the current Game Changers within the commander's identity
-   (`is:gamechanger id<=<colors>` on Scryfall). Then:
-   - Brackets 1–2: include **zero**.
-   - Bracket 3: include **at most 3**, and only if they earn it.
-   - Brackets 4–5: unrestricted.
-   If a default card choice is a Game Changer and the bracket forbids/limits it, swap to a
-   non-Game-Changer with the same role (Scryfall: same `function:` tag, drop `is:gamechanger`).
+### Tuning does NOT raise the bracket
 
-2. **Combos.** For Brackets 1–3, avoid **early/easy two-card infinite combos** as win conditions. The
-   methodology's win-condition step should lean on board-state finishers (drains, overruns, big evasive
-   threats) rather than "assemble these two cards and win." Brackets 4–5 may build around combos freely.
+A deck full of efficient staples, a perfect mana base, and tight synergy but with **none** of the five signals
+above is **still Bracket 2**. "Optimized within Bracket 2's rules" is a real, common, *strong* deck — **do not
+relabel it Bracket 3 just because it is good.** Power *within* a bracket is what the ★ rating measures (see
+`rating.md`); the bracket itself is set only by the signals above.
 
-3. **Mass land destruction.** Avoid in Brackets 1–3.
+> **Worked example — a tuned Gruul lands deck.** Heavy ramp, Cultivate-style value, big landfall payoffs, a
+> crisp curve, 38 lands, premium-but-legal staples, and it wins reliably around turn 8–9 by going over the
+> top. It runs **0 Game Changers, no two-card infinite combo, no mass land destruction, no chained extra
+> turns, and only a couple of tutors.** Its actual bracket is **Bracket 2 — not Bracket 3.** Being
+> well-tuned is not a B3 signal. It would *rate highly as a Bracket 2 deck.* It only becomes B3 if you add
+> Game Changers (e.g. a couple of the green/red ones) or a compact win.
 
-4. **Interaction efficiency & density.** Scale with bracket — higher brackets want cheaper, instant-speed,
-   sometimes free interaction and a bit more of it; lower brackets tolerate slower, more synergistic
-   answers.
+## Always report ACTUAL vs target, and how to move
 
-5. **Tutors and fast mana.** Heavy tutoring and fast mana push a deck up in power; use them sparingly in
-   low brackets and freely in 4–5. (Specific tutor restrictions have changed across updates — verify
-   current rules if it matters for the build.)
+Whenever you state a bracket:
 
-When you deliver the deck, state the target bracket, how many Game Changers it contains, and confirm it
-respects the combo/MLD limits for that bracket so the user can represent it honestly at a table.
+1. **Report the bracket the deck ACTUALLY is** by the rule above, naming the signal that sets the floor
+   (e.g. *"Bracket 2 — 0 Game Changers, no combos, no MLD, light tutoring; nothing forces a higher floor"*,
+   or *"Bracket 4 — a turn-4 Thoracle/Consultation line forces it, regardless of the rest"*).
+2. Only present a **higher target** bracket if the deck genuinely meets that bracket's power, and **state
+   plainly when target and actual differ** — *"you asked for B3, but as built this is B2; here's why, and
+   here's exactly what would make it a real B3."*
+3. **Always tell the user what moves it UP one bracket and what moves it DOWN**, concretely, in cards:
+   - **B2 → B3:** add **up to 3 Game Changers** in-identity (`is:gamechanger id<=<colors>`) and/or a
+     **compact (but not early-cheap) two-card win**, tighten the tutor package, and run cheaper/faster
+     interaction. Adding even **one** Game Changer is enough to cross the line.
+   - **B3 → B4:** add an **early (≤~turn 6) cheap two-card infinite combo**, exceed **3** Game Changers, add
+     **mass land denial** or **chained extra turns**, or stack **fast mana + tutors** into a consistent fast
+     kill.
+   - **Down a bracket (e.g. B3 → B2):** cut Game Changers to **0**, remove any early combo and all MLD, thin
+     tutors/fast mana, and lean on win cons that close over several turns.
+
+## Enforcing a bracket while building or upgrading
+
+- Pull the current Game Changers in-identity (`is:gamechanger id<=<colors>`) and count them against the cap
+  (B1–2: **0**; B3: **≤3**; B4–5: unlimited). If a default card is a Game Changer the target forbids/limits,
+  swap to a non-Game-Changer with the **same role** (`function:` tag, drop `is:gamechanger`).
+- For B1–3, keep any combo **late and conditional** — never an early cheap two-card infinite.
+- **No MLD and no chained/looped extra turns below B4.**
+- Scale interaction efficiency and fast mana to the bracket.
+
+When you deliver, state the **actual** bracket, the **Game Changer count**, that the combo / MLD / extra-turn
+limits are respected, and the **move-up / move-down** note, so the user can represent the deck honestly at a
+table.

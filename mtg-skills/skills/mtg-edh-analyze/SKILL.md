@@ -24,14 +24,19 @@ judges**, then points at what to fix.
 
 Two principles keep the rating honest:
 
-1. **The bracket is the benchmark.** Five stars means "an excellent deck *for this bracket*", not "a cEDH
-   deck". A tuned Bracket 2 list and a sharp Bracket 4 list can both earn ★★★★★ at their own level. Always
-   report the stars **and** where the deck actually sits on the 1–5 bracket scale — and if those disagree,
-   say so plainly (a deck stuffed with Game Changers is not a five-star "Bracket 2" deck; it's mis-bracketed).
-2. **The score is built from evidence, not vibes.** Every dimension is scored against the explicit rubric in
-   `references/rating.md`, backed by hard numbers from `scripts/analyze_deck.py` and by **reading the actual
-   Oracle text** of the cards (the synergy score can't be faked from names). The rating's whole value is that
-   it points at *exactly* what's strong and what to fix.
+1. **The bracket is the benchmark, and it's determined STRICTLY.** Five stars means "matches or beats the
+   comparable proven top lists *for this bracket*", not "a cEDH deck" and not "it works". Determine the deck's
+   **actual** bracket from concrete signals only (Game Changer count, early two-card combos, MLD, chained
+   extra turns, fast mana + tutor density — see `references/brackets.md`), and **report it against the target
+   the user named.** A well-tuned, optimized deck with **0 Game Changers, no combos, no MLD** is **Bracket
+   2**, not 3 — being good is not a B3 signal. If the deck and its claimed bracket disagree, say so plainly
+   (and a deck stuffed with Game Changers is not a five-star "Bracket 2" deck; it's mis-bracketed).
+2. **The score is built from evidence, not vibes — and rounds DOWN when evidence is thin.** Every dimension is
+   scored against the strict rubric in `references/rating.md`, backed by hard numbers from
+   `scripts/analyze_deck.py`, by **reading the actual Oracle text**, and — for Staples and Synergy — against
+   **comparison data** (EDHREC inclusion rates/ranks and comparable real lists for this commander). A deck
+   that merely *functions* is **★★★ (3)**, not 4; 4–5 must be proven against the comparables. When you can't
+   pull that data, default to the lower score and say so.
 
 ## Start here: paste your decklist and name a bracket
 
@@ -65,6 +70,12 @@ The bundled **`scripts/analyze_deck.py`** does the measuring; **you** do the jud
    but classification and synergy are judgment calls that need the wording. Use `scryfall_search.py` for
    anything extra: `--named "Card"` for a card's exact text, `function:ramp id<=<colors>` / `function:removal
    …` / `is:gamechanger id<=<colors>` to spot staples the deck is *missing*.
+4. **Pull the comparable real decklists** so the Staples and Synergy dimensions are scored against *evidence*,
+   not opinion: `python "${CLAUDE_SKILL_DIR}/scripts/edhrec_fetch.py" "<commander>"` (top/staple +
+   high-synergy cards with inclusion rates), `--average` (the average ~100-card list), and `--theme`/`--budget`
+   for variants. Compare the deck's contents to these inclusion rates: which high-inclusion staples it runs vs.
+   misses, and whether its engine is as dense as the proven lists. If EDHREC is unreachable, say so and treat
+   proven-inclusion claims as lower-confidence — and rate **down** accordingly (`references/rating.md`).
 
 If the database can't be built or reached, fall back to `web_search`/`web_fetch` of Scryfall pages (and say
 prices/newest cards are unverified), or to known MTG knowledge — but prefer the local DB; it's what makes the
@@ -79,31 +90,40 @@ combine by weight and apply the gates:
    interaction + 2–4 wipes, a curve with only 3–4 cards at MV 6+. The fundamentals that win games.
 2. **Synergy density** *(25%)* — via `references/synergy.md`: what fraction of non-structural cards clear the
    **≥2–3 points of contact** bar, the average contact count, and whether engines reinforce each other.
-3. **Staples & card quality** *(20%)* — the EDHREC-rank signal plus judgment on whether the right efficient,
-   on-theme cards are present and which obvious ones are missing. Scaled to bracket (B1–2 lenient, B3–5
-   demanding).
+3. **Staples & card quality** *(20%)* — scored against **comparison data**: the EDHREC-rank signal **and** the
+   inclusion rates of the comparable lists. Does it run the high-inclusion pieces its plan wants, at the rate
+   the proven lists do, and what high-inclusion cards is it missing? Scaled to bracket (B1–2 lenient, B3–5
+   demanding); round down when the data is thin.
 4. **Win conditions & closing power** *(15%)* — 3–4 real, repeatable, resilient ways to actually end the
-   game from a normal board.
-5. **Bracket calibration** *(10%, partial gate)* — Game Changer count vs. the bracket cap, combos, fast mana,
-   tutors, MLD. A deck that **violates** its target bracket is mis-bracketed: report its real bracket and cap
-   the score. See `references/brackets.md`.
+   game from a normal board (one unremarkable wincon is a 3, not a 4).
+5. **Bracket calibration** *(10%, partial gate)* — determine the **actual** bracket from the signals (Game
+   Changer count, early combos, MLD, chained extra turns, fast mana + tutor density) and compare to the
+   target. Actual < target is the common honest case (report it, don't inflate elsewhere); actual >
+   target/violation is **mis-bracketed** → report the real bracket and cap the score. See `references/brackets.md`.
 
 `overall = 0.30·structure + 0.25·synergy + 0.20·staples + 0.15·wincons + 0.10·bracket`, rounded to the
-nearest half-star, then capped by the gates in `references/rating.md` (a dimension at 1, a missing
-fundamental, or a mis-bracket all cap the headline).
+nearest half-star, then capped by the gates in `references/rating.md` — note the **"it just functions"
+ceiling of ★★★** (4+ must be earned against comparable lists), plus the caps for a dimension at 1, a missing
+fundamental, or a mis-bracket.
 
 ## The deliverable
 
 Hand back a **rating report** in the conversation:
 
-1. **Headline** — e.g. `★★★★☆ (4/5) — a strong Bracket 3 deck`, plus the **actual bracket** if it differs.
-2. **Scorecard** — the five dimensions, each with its stars and the **numbers behind it** (show the
-   analyzer's stats: "Structure ★★★★ — 37 lands, 11 ramp, 13 draw, 9 interaction + 3 wipes; curve fine").
-3. **Strengths (2–3)** and **weaknesses (2–3)** — concrete, each tied to a dimension.
-4. **Highest-impact fixes (3–5)** — cheapest-first changes that would raise the score most, and an **offer to
+1. **Headline** — e.g. `★★★½ (3.5/5) — a solid Bracket 2 deck`, plus the **actual bracket** stated against the
+   target if they differ (e.g. "you asked for B3; as built it's B2").
+2. **Scorecard** — the five dimensions, each with its stars and the **numbers/evidence behind it** (show the
+   analyzer's stats and inclusion-rate comparisons: "Structure ★★★ — 37 lands, 11 ramp, 13 draw, 9
+   interaction + 3 wipes; on target but not tighter than the comparable lists, so 3").
+3. **Strengths (2–3)** and **weaknesses (2–3)** — concrete, each tied to a dimension and, where possible, to
+   comparison data.
+4. **Move-up / move-down note** — what would raise the deck one bracket and what would drop it
+   (`references/brackets.md`).
+5. **Highest-impact fixes (3–5)** — cheapest-first changes that would raise the score most, and an **offer to
    hand off to `mtg-edh-upgrade`** to actually make the swaps (carry over the diagnosis).
 
-Keep it honest and specific — "card advantage is thin (9, want 12+)" beats "could be better".
+Keep it honest and specific, and **err toward the lower score when evidence is thin** — "card advantage is
+thin (9, want 12+); EDHREC lists average 14" beats "could be better".
 
 **Saving the report is optional — write a file only if the user asks.** When they do, save it as
 `.mtg/analysis/<deck-slug>.md` in the resolved workspace (slug = commander name, kebab-case) and share it with

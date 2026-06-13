@@ -7,8 +7,9 @@ description: >-
   commander deck", "improve this EDH deck", "here's my decklist, what should I change", "tune my Atraxa
   list", "what are the best upgrades for my deck", "help me cut/add cards", or any request that pastes or
   references an existing 100-card list and asks for improvements. The user pastes their current list inline.
-  The skill diagnoses the deck against a proven 7-step methodology (land count, card advantage, ramp,
-  interaction, curve, win conditions), then recommends the highest-impact swaps within a budget — and
+  The skill diagnoses the deck against a proven methodology and comparable proven decklists (land count,
+  card advantage, ramp, interaction, curve, win conditions, inclusion rates), determines the deck's actual
+  power bracket, then recommends the highest-impact role-preserving swaps within a budget — and
   because this is an upgrade, the budget is usually much smaller than building a deck from scratch. Prices
   everything via Scryfall (Cardmarket EUR) and respects the deck's color identity and power bracket.
 ---
@@ -68,7 +69,10 @@ advantage), **raise it and ask** whether they want it addressed rather than sile
 Two parameters, same as the builder — confirm them up front unless the user already stated both:
 
 - **Power bracket (1–5)** — where the user wants the deck to land (it may differ from where it is now). See
-  `references/brackets.md`. Default to keeping the deck at its current bracket if the user is unsure.
+  `references/brackets.md` for the **strict determination logic**. Default to keeping the deck at its current
+  bracket if unsure. This is the **target**; you'll report the deck's **actual** bracket (before and after)
+  determined from concrete signals — and a tuned deck with 0 Game Changers / no combos / no MLD is **Bracket
+  2**, not 3, however optimized.
 - **Upgrade budget cap** — a total spend in EUR (Cardmarket) for the changes, or "no cap". **Because this
   is an upgrade, the budget can be much lower than building from scratch** — even €10–30 of well-targeted
   swaps can noticeably improve a deck. Ask for their cap, suggest that a small budget is fine, and make the
@@ -85,12 +89,14 @@ See "The `.mtg` workspace" below.
 1. **An annotated, upgraded decklist** (`deck.md`) — the full improved 100, cards grouped by role
    (Commander, Lands, Ramp, Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing
    card name, mana value, a one-line reason, and Cardmarket EUR price. Include category counts, total deck
-   value, and the target bracket. **Open with a "Changes" section** that is the heart of an upgrade: each
-   change as **— Cut `<card>` → Add `<card>` (reason; €X)**, grouped by the weakness it fixes, plus the
-   **total upgrade spend vs the budget cap** and a short "what these changes do" paragraph. Close with a
-   **Deck Rating** section — an overall ★ rating (out of 5) at the target bracket plus the per-dimension
-   scorecard, ideally **before vs. after** so the user sees how much the upgrade moved the needle (see
-   "Step 6 — Rank the upgraded deck").
+   value. **Open with a "Changes" section** that is the heart of an upgrade: each change as **— Cut `<card>`
+   (€X) → Add `<card>` (€Y) (shared role/reason)**, grouped by the weakness it fixes, plus the **total upgrade
+   spend vs the budget cap** and a short "what these changes do" paragraph. Include an **Actual bracket**
+   line — the bracket the upgraded deck *actually is* by `references/brackets.md` (with Game Changer count and
+   combo/MLD/extra-turn confirmation), stated against the target if they differ, plus a **"what's needed to go
+   up one bracket" (and what would drop it)** note. Close with a **Deck Rating** section — an overall ★ rating
+   at the actual bracket plus the per-dimension scorecard, **before vs. after** so the user sees how much the
+   upgrade moved the needle (see "Step 6 — Rank the upgraded deck").
 2. **A plain importable list** (`import.txt`) — the upgraded 100 as `1 Card Name`, commander on its own
    first line, ready to paste into Moxfield / Archidekt / mtggoldfish. Generate it *from* the upgraded
    annotated list so they can't drift.
@@ -155,16 +161,21 @@ The target shape of a functioning 100 and the reasoning behind every number live
 `references/synergy.md` — read it too. The Scryfall query cookbook for finding upgrade candidates is in
 `references/scryfall-syntax.md`. Work in this order:
 
-### Step 1 — Diagnose the current list, then talk it through with the user
-Tally the existing deck and compare it to the methodology's targets: ~37–38 lands, **12+ net-positive**
-card-advantage pieces, ~10–11 ramp, ~10 interaction + 2–4 board wipes, 3–4 real win conditions, a sensible
-curve, and color-identity legality. Note the **biggest gaps** — too few lands, thin card advantage,
-not enough/inefficient interaction, a top-heavy curve, or no clear way to actually close the game.
+### Step 1 — Diagnose the current list against comparable lists, then talk it through
+First **pull the comparable proven decklists** for the commander (`scripts/edhrec_fetch.py "<commander>"` for
+top/high-synergy with inclusion rates, `--average`, `--theme`/`--budget`) — they're the benchmark and the
+source of candidates. Tally the existing deck and compare it to the methodology's targets *and* to those
+inclusion rates: ~37–38 lands, **12+ net-positive** card-advantage pieces, ~10–11 ramp, ~10 interaction + 2–4
+board wipes, 3–4 real win conditions, a sensible curve, color-identity legality. Note the **biggest gaps** —
+too few lands, thin card advantage, inefficient interaction, a top-heavy curve, no clear closer, or
+low-inclusion filler where the proven lists run high-inclusion staples.
 
-Then **share a short, readable diagnosis** and reconcile it with what the user told you in "Ask what's
-wrong": where do their complaints and your tally agree, and where does your tally reveal something they
-didn't raise? **Agree on the top 2–3 priorities together before proposing any cards.** Don't proceed to
-swaps until you and the user are aligned on what this upgrade is actually for.
+**Also determine the deck's ACTUAL bracket now** from the signals in `references/brackets.md` (Game Changer
+count, early two-card combos, MLD, chained extra turns, fast mana + tutor density) and compare it to the
+target — don't inflate a tuned-but-vanilla deck to B3. Then **share a short, readable diagnosis** and
+reconcile it with what the user told you in "Ask what's wrong": where do their complaints and your tally
+agree, and where does your tally (or the bracket determination) reveal something they didn't raise? **Agree on
+the top 2–3 priorities together before proposing any cards.**
 
 ### Step 2 — Rank upgrade candidates by impact per euro
 For each gap, gather candidates **primarily from EDHREC's JSON API** (`scripts/edhrec_fetch.py "<commander>"`
@@ -188,11 +199,17 @@ filler, an overcosted card the curve doesn't need, a win-more card, a strictly w
 Keep the deck at exactly **100**. Don't cut cards the user flagged as favorites unless they're clearly
 hurting the deck — and if so, explain why and offer the choice.
 
-### Step 4 — Respect budget and bracket
-Keep the running spend under the cap; if a high-impact swap blows the budget, find a cheaper card that does
-most of the same job (`references/scryfall-syntax.md`). Enforce bracket rules (Game Changer count, combo
-restrictions — `references/brackets.md`): an upgrade must not silently push the deck past its target
-bracket. Re-check the category counts after the swaps and adjust until the deck hits the target shape.
+### Step 4 — Respect budget and bracket (role-preserving swaps; honest stop)
+Keep the running spend under the cap. If a high-impact add blows the budget, find a **cheaper card serving the
+same role/synergy** — same function, color identity, comparable effect, ideally also in the comparable lists
+(`function:<role> id<=<colors>` filtered by `eur<X`; `references/scryfall-syntax.md`). If no adequate cheaper
+substitute exists without weakening the deck, leave the current card and move to the next priority — don't
+spend the budget on a downgrade. Enforce bracket rules (`references/brackets.md`) and **recompute the actual
+bracket after the swaps** so the upgrade doesn't silently push the deck past (or pull it below) the target.
+**If the budget can't lift the deck to a solid version of the target bracket**, say so plainly and either ask
+for a larger budget for the specific cards that would do it, or **target one bracket lower** and re-evaluate
+there, explaining the trade-off. Re-check category counts after the swaps and adjust until the deck hits the
+target shape.
 
 ### Step 5 — Propose, discuss, and iterate (don't write files yet)
 **Present the proposed swaps to the user for reaction before finalizing** — ideally in small batches by
@@ -208,10 +225,12 @@ Before writing files, **rate the final list** and embed the result in `deck.md`.
 objective stats (curve, category counts, **EDHREC-rank staple signal**, Game Changer count, off-identity
 check, total EUR), then apply the **five-dimension rubric in `references/rating.md`** — structure &
 consistency, synergy density (via `references/synergy.md`), staples & card quality, win conditions, and
-bracket calibration — for an overall ★ rating *at the target bracket*. This is the same method as the
-dedicated **mtg-edh-analyze** skill. Write a **Deck Rating** section into `deck.md` and, because this is an
-upgrade, show it as **before → after** when you can (rate the pasted starting list too) so the changes'
-impact on the score is visible. If the rating reveals the upgrade didn't move the deck's biggest weakness,
+bracket calibration — for an overall ★ rating *at the deck's actual bracket*. The rubric is **strict and
+evidence-based**: a deck that merely *functions* is **★★★ (3)**, not 4, and 4–5 must be earned against the
+comparable lists (score Staples/Synergy off inclusion-rate/rank data, round **down** when evidence is thin).
+This is the same method as the dedicated **mtg-edh-analyze** skill. Write a **Deck Rating** section into
+`deck.md` and, because this is an upgrade, show it as **before → after** (rate the pasted starting list too)
+so the changes' impact is visible. If the rating reveals the upgrade didn't move the deck's biggest weakness,
 say so and propose the next swap rather than shipping it quietly.
 
 ## How to drive the data sources
@@ -255,8 +274,10 @@ first.
   prints `100`; `sed 's/^[0-9]* //' import.txt | sort | uniq -d` prints nothing). The **Changes** section's
   cuts and adds must net to zero card-count change, and every added card must appear in the final list and
   every cut must be gone.
-- **Within budget & bracket:** total upgrade spend ≤ the cap (or the user okayed an overage); color
-  identity legal for every card; bracket rules satisfied.
+- **Within budget & bracket:** total upgrade spend ≤ the cap (or the user okayed an overage, or the honest
+  stop / step-down was reported); color identity legal for every card; the **actual bracket** recomputed
+  (`references/brackets.md`) and matching the target (or the difference stated), with the **move-up /
+  move-down** note included.
 - **Double-check colors:** every card you add is within the commander's color identity — vet with
   `id<=<identity>` (NOT `c:`, which also matches off-identity multicolor cards) and check the search **CI**
   column. One off-identity pip makes a card illegal in the deck.

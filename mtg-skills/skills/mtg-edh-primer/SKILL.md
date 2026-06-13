@@ -83,10 +83,12 @@ Read the commander + every card's Oracle text and match the deck to one or more 
 any **two-card combo** (matters for bracket). Note the deck's speed (from curve + ramp) — it sets the play
 guide's turn bands.
 
-### Step 2 — Tag every card (role + theme)
-Using `references/tags.md`, give each card the tags that **actually fit** — role tags where the function is
-present, theme tags derived from the deck's identity. Don't force a universal set. A card can have several
-tags; its **primary** tag decides which section explains it.
+### Step 2 — Tag every card (exactly one tag each)
+Using `references/tags.md`, give each non-commander card **exactly one** tag — its single **most-defining
+role** in *this* deck (role tag where a function dominates, theme tag where the deck's engine is the point).
+When a card does several jobs, pick the **primary** one; that one tag also decides which section explains it.
+This keeps the Tag-grouped overview readable — every card lands in exactly one group. **Never tag the
+commander** — Moxfield labels it in its own zone, so the commander line gets no tag.
 
 ### Step 3 — Write the per-card lines
 **One tight line per card, in the context of *this* deck** — its job here, not its generic Oracle text. Give
@@ -101,17 +103,31 @@ their primary tag.
   for · counterplay vs other players* (multiplayer politics, board wipes, archenemy heat).
 - **Common misplays** — a short callout of the traps specific to piloting this deck.
 
-### Step 5 — Rate it (★ shown beside the Bracket)
-Score the deck with the five-dimension rubric in `references/rating.md` (structure & consistency, synergy
-density, staples & card quality, win conditions, bracket calibration), using the `analyze_deck.py` numbers +
-`references/brackets.md`. Put the result **prominently at the top of the primer** as, e.g., **`★★★★½ · Bracket 3`**,
-with this rule stated plainly:
+### Step 5 — Rate it (★ scorecard at the top of the primer)
+**Every primer includes a rating — there are no exceptions.** Score the deck against its **target bracket**
+with the five-dimension rubric in `references/rating.md` (structure & consistency, synergy density, staples &
+card quality, win conditions, bracket calibration) — do **not** restate the rubric here, follow it — using the
+`analyze_deck.py` numbers + `references/brackets.md`. This is the same rubric the **mtg-edh-analyze** skill
+uses; the primer reports a **compact summary** of it, not a full analysis.
+
+Render the result as a **Rating block placed right after the header**, in three parts:
+
+1. A **one-line headline**, e.g. `Rating: ★★★★☆ (4/5) — strong Bracket 3` (use half-stars; state the deck's
+   *actual* bracket if it differs from the target).
+2. A **compact per-dimension scorecard table** — the five dimensions, each with its stars **and the numbers
+   behind the score** (e.g. `Structure ★★★★ — 37 lands, 11 ramp, 13 draw, 9 removal + 3 wipes`). One row each;
+   keep it tight.
+3. **One line** naming the **biggest gaps + their cheapest fixes** (e.g. "Thin draw (9, want 12+) and only one
+   wipe — cheapest fixes: Guardian Project (€2), Blasphemous Act (€1).").
+
+Always pair the stars with the bracket and state this rule plainly beside them:
 
 > **★ ≠ bracket.** The stars rate how good the deck is *within its bracket*; the bracket is its absolute power
 > tier. A **2★ Bracket 4** deck is more powerful than a **5★ Bracket 2** deck.
 
 If the deck is mis-bracketed (e.g. Game Changers above its bracket's cap, or an early infinite combo), say so
-and report the bracket it actually sits at.
+and report the bracket it actually sits at. Keep the whole block short — it's the primer's summary scorecard,
+not the full report `mtg-edh-analyze` would write.
 
 ## The deliverables
 
@@ -119,17 +135,26 @@ Write two files into `.mtg/decks/edh/<slug>/`, and **never modify `deck.md` or `
 build/upgrade's status + plain-list outputs):
 
 1. **`primer.md`** — the publish-ready primer, in this order:
-   - **Header:** deck name + commander; **`★★★★½ · Bracket 3`** + the ★≠bracket note; colors; total value.
+   - **Header:** deck name + commander; the **`Rating: ★★★★☆ (4/5) — strong Bracket 3`** headline + the
+     ★≠bracket note; colors; total value.
+   - **Rating** *(right after the header — Step 5)* — the compact per-dimension scorecard table (each dimension's
+     stars + the numbers behind it) and the one-line biggest-gaps + cheapest-fixes note. Short; it's the
+     summary, not a full analysis.
    - **TL;DR** — 2–3 sentences: archetype, how it plays, how it wins.
    - **How it wins** — the named win conditions (Step 1).
    - **Card roles & tags** — a one-line tag legend, then cards grouped by primary tag with their one-line
-     explanations (Step 3). State that the same tags are in `moxfield-import.txt` (group by Tag in Moxfield).
+     explanations (Step 3). State that the **same single tag per card** is in `moxfield-import.txt`, and that
+     **the tags only take effect via Moxfield's Bulk Edit — not the Import/netdeck screen** (see below); once
+     applied, group by Tag in Moxfield for a clean role overview.
    - **Play guide** — mulligan, early/mid/late, common misplays (Step 4).
    - **Strengths & weaknesses** — and how to play around the weaknesses.
-   - **Rating** — the per-dimension scorecard behind the headline stars.
    It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab.
-2. **`moxfield-import.txt`** — the 100-card list with deck-specific `#Tags` per card (see `references/tags.md`),
-   built from `import.txt` so card names stay identical. Commander first, blank line, then the 99.
+2. **`moxfield-import.txt`** — the 100-card list with **exactly one** deck-defining `#Tag` per non-commander
+   card (see `references/tags.md`), built from `import.txt` so each card line — name **and** its exact
+   `(SET) collector#` printing — stays byte-for-byte identical. **The commander comes first and carries no
+   `#Tag`** (Moxfield labels it in its own zone), then a blank line, then the 99 each with their single tag.
+   Include a short usage note in `primer.md` explaining that Moxfield's **Import/netdeck screen ignores the
+   `#Tags`** — paste this file into Moxfield's **Bulk Edit** box instead to apply them.
 
 Use the file-presentation tool to share both once written.
 
@@ -137,9 +162,12 @@ Use the file-presentation tool to share both once written.
 
 - **Grounded:** every win condition and per-card line reflects the actual Oracle text (from `analyze_deck.py`),
   not the card name.
-- **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; every card in
-  `moxfield-import.txt` carries ≥1 fitting tag and the names match `import.txt` exactly (it still sums to 100).
-- **Honest rating:** stars are scored against the rubric at the stated bracket, with the ★≠bracket rule shown,
-  and mis-bracketing called out.
+- **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; **every
+  non-commander card in `moxfield-import.txt` carries exactly one fitting tag, the commander line carries
+  none**, and each line (name + `(SET) collector#` printing) matches `import.txt` exactly (it still sums to
+  100). The Bulk-Edit-not-Import workflow is stated in the primer.
+- **Honest rating:** the primer opens with the rating — a one-line headline, the compact per-dimension
+  scorecard with the numbers behind each score, and the biggest-gaps + cheapest-fixes line — scored against the
+  rubric at the stated bracket, with the ★≠bracket rule shown and mis-bracketing called out.
 - **Non-destructive:** `deck.md` and `import.txt` are untouched; only `primer.md` and `moxfield-import.txt` are
   written.

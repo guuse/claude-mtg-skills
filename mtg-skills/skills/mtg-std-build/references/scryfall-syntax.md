@@ -19,7 +19,8 @@ legal:standard game:arena
 - `game:arena` — the card actually exists on MTG Arena (some paper cards don't; this matters a lot here).
 
 Standard rotates, so don't hardcode a set list — `legal:standard` always reflects the current pool. To
-sanity-check what's in Standard right now, see untapped.gg's "What's in Standard" or filter by it directly.
+sanity-check what's in Standard right now, filter Scryfall by `legal:standard` directly (it's the
+authoritative, fetchable source for the legal pool — no meta site needed).
 
 ## Rarity
 

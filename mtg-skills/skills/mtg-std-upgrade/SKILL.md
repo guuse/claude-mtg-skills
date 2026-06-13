@@ -10,8 +10,9 @@ description: >-
   inline. The skill diagnoses the deck (curve, mana base, consistency, meta matchups), then recommends the
   highest-impact swaps — built from cards the user already owns first (via their Arena collection export),
   and costed in Arena wildcards against a budget tier that, because this is an upgrade, is usually much
-  lower than building from scratch. Verifies legality and rarity via Scryfall; reads the live meta from
-  untapped.gg/mtggoldfish. For 60-card Standard, NOT 100-card Commander/EDH.
+  lower than building from scratch. Verifies legality and rarity via Scryfall; factors in the current
+  Standard meta from model knowledge (flagged unverified — no bot-fetchable meta source). For 60-card
+  Standard, NOT 100-card Commander/EDH.
 ---
 
 # MTG Arena Standard Deck Upgrader
@@ -37,7 +38,9 @@ only write the final files once the user has agreed to the changes. Default to a
 ## Start here: paste your decklist
 
 The user provides their **current decklist inline** in their prompt (pasted text — ideally the Arena export
-format with a `Deck` header and optional `Sideboard`, but a plain `<count> <Card Name>` list is fine).
+format with a `Deck` header and optional `Sideboard`, but a plain `<count> <Card Name>` list is fine). If
+they give a **Moxfield/Archidekt link** instead, run `scripts/import_deck.py <url>` to pull it via the site
+JSON API (it falls back to asking for a paste if the deck is private/unreachable; never invents a list).
 Parse it: confirm it's **60** maindeck (+ up to 15 sideboard), identify the **archetype/centerpiece** and
 colors, label each card's **rarity** via Scryfall, and verify every card is still `legal:standard` and on
 Arena (flag anything rotated out or banned — that's often the first thing to fix).
@@ -191,9 +194,12 @@ wrong": where do their complaints and your read agree, and where does your read 
 didn't raise? **Agree on the top 2–3 priorities together before proposing any cards.**
 
 ### Step 2 — Read the meta and find the bad matchups
-Pull the current Standard ladder meta (untapped.gg BO1, mtggoldfish) and identify the top decks. Ask which
-matchups the user is losing. The upgrade should improve the worst real matchups, not just add power in a
-vacuum.
+Read the current Standard ladder meta and identify the top decks. **There is no bot-fetchable meta source**
+(untapped.gg / mtggoldfish are Cloudflare-protected and must NOT be scraped), so work from the model's own
+meta knowledge — **flagged as unverified / possibly stale** — and ask the user to confirm the field and
+which matchups they're losing (and to paste a meta snapshot or netdeck if they have one; a Moxfield/
+Archidekt netdeck link can be pulled with `scripts/import_deck.py <url>`). The upgrade should improve the
+worst real matchups, not just add power in a vacuum. See `references/data-sources.md`.
 
 ### Step 3 — Rank upgrades by impact per wildcard, owned-first
 For each problem, gather candidate fixes from the meta sites and Scryfall (`references/scryfall-syntax.md`).
@@ -238,8 +244,10 @@ rather than shipping it quietly.
 
 Same as the builder. **Scryfall** is the source of truth for Standard legality, rarity, Arena availability,
 and oracle text (`legal:standard`, `game:arena`, `r:rare`/`r:mythic`; every card has a `rarity` field).
-**untapped.gg** (`https://mtga.untapped.gg/constructed/standard`) for the BO1 ladder meta; **mtggoldfish**
-(`https://www.mtggoldfish.com/metagame/standard`) for metagame %s and netdecks.
+**Standard / Arena meta has no bot-fetchable source** — untapped.gg and mtggoldfish are Cloudflare-protected
+HTML and **must not be scraped**; read the field from the model's meta knowledge (flagged unverified) and
+let the user paste a snapshot or a netdeck link (pull links with `scripts/import_deck.py`). Full
+endpoint/fallback table: `references/data-sources.md`.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
@@ -254,11 +262,12 @@ legality are used). `function:`/`otag:` (Tagger) queries route to the live API a
   `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck <arena>.txt --tier <N>` to tally a list's wildcard cost vs the
   tier. The script counts every non-basic card from zero — when a collection is loaded, subtract owned
   copies from its totals yourself.
-- **No code-exec network, but web tools** → `web_search` then `web_fetch` (web_fetch only takes URLs from a
-  prior search). No DB can be built here — that's the expected fallback.
-- **Neither** → tell the user the environment needs network to `api.scryfall.com`, `untapped.gg`, and
-  `mtggoldfish.com`, and offer to proceed from known knowledge with the caveat that legality, rarity, and
-  the current meta are unverified (Standard rotates and Arena availability varies — flag this clearly).
+- **No code-exec network, but web tools** → `web_fetch` the Scryfall search page for card data. Do **not**
+  try to `web_fetch` untapped.gg/mtggoldfish (Cloudflare — they'll fail); rely on the model's meta
+  knowledge, flagged unverified, and ask the user to paste any netdeck. No DB can be built here — expected.
+- **Neither** → tell the user the environment needs network to `api.scryfall.com`, and offer to proceed
+  from known knowledge with the caveat that legality, rarity, and the current meta are unverified (Standard
+  rotates and Arena availability varies — flag this clearly).
 
 ## Quality bar before you hand it over
 

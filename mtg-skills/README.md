@@ -5,12 +5,12 @@ A Claude Code plugin bundling **Magic: The Gathering** skills.
 ## Bundled skills
 
 - **[mtg-edh-build](skills/mtg-edh-build/SKILL.md)** — builds a tuned,
-  priced 100-card Commander (EDH) deck around any commander, using EDHREC + mtgdecks.net for
+  priced 100-card Commander (EDH) deck around any commander, using EDHREC's JSON API for
   proven inclusions and Scryfall for gap-filling and Cardmarket (EUR) pricing.
 - **[mtg-std-build](skills/mtg-std-build/SKILL.md)** — builds a 60-card
-  MTG Arena **Standard** deck, centerpiece-first and tuned against the live ladder meta
-  (untapped.gg / mtggoldfish), costed in **Arena wildcards** by rarity against a budget tier and
-  your owned collection.
+  MTG Arena **Standard** deck, centerpiece-first and tuned against the current ladder meta
+  (from model knowledge — no bot-fetchable meta source; blocked sites are never scraped), costed
+  in **Arena wildcards** by rarity against a budget tier and your owned collection.
 - **[mtg-edh-upgrade](skills/mtg-edh-upgrade/SKILL.md)** — improves an
   **existing** Commander deck you paste in: diagnoses it against the same methodology and recommends
   the highest-impact swaps within a budget (usually much smaller than a fresh build), priced in EUR.

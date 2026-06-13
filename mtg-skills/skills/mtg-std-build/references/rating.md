@@ -48,8 +48,9 @@ theme plus some off-plan cards. **1** = a pile of unrelated cards pulling differ
 
 ### 4. Meta resilience — *weight 20%* (can it survive the ladder?)
 
-The deck must beat the **current field**, not just goldfish. Using the live meta (untapped.gg BO1,
-mtggoldfish), check it has real **answers for the top 2–3 ladder decks**: cheap removal/sweepers and lifegain
+The deck must beat the **current field**, not just goldfish. Using the current meta (from your own
+knowledge — no bot-fetchable meta source; never scrape untapped.gg/mtggoldfish, see
+`references/data-sources.md`), check it has real **answers for the top 2–3 ladder decks**: cheap removal/sweepers and lifegain
 vs. aggro, card advantage vs. midrange/discard, sweepers/enchantment removal vs. go-wide, graveyard hate vs.
 reanimator. For **BO3**, the **15-card sideboard** must turn the bad matchups around. Answers should not
 actively hurt the deck's own plan (a clean wrath for a tokens deck, not one that catches its own board).

@@ -86,9 +86,13 @@ robust engine beats two fragile ones stapled together.
 
 ## Step 5 — Read the meta
 
-The deck has to *compete*. Before finalizing, look at the current Standard ladder field:
-- **untapped.gg** BO1 constructed Standard — the live ladder meta by play rate.
-- **mtggoldfish** Standard metagame — percentages and full lists (better for BO3).
+The deck has to *compete*. Before finalizing, read the current Standard ladder field. **There is no
+bot-fetchable meta source** — untapped.gg and mtggoldfish are Cloudflare-protected HTML and must **not** be
+scraped (see `references/data-sources.md`). So:
+- Describe the field from your own meta knowledge, **explicitly flagged as unverified / possibly stale**.
+- Invite the user to paste a current meta snapshot or a specific netdeck. A Moxfield/Archidekt netdeck link
+  can be pulled with `scripts/import_deck.py <url>`.
+- Never present a scraped or invented metagame percentage as fact.
 
 Note the top few decks. The ladder usually has a fast aggro deck (frequently mono-red), one or two
 midrange decks, and a control or go-wide deck. This is the gauntlet your brew must survive — an ambitious,

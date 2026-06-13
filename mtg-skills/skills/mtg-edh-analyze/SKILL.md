@@ -36,8 +36,10 @@ Two principles keep the rating honest:
 ## Start here: paste your decklist and name a bracket
 
 - The user provides their **decklist inline** (a Moxfield/Archidekt export, a `1 Card Name` list, or a rough
-  list). To analyze it, **write it to a temp file and run the analyzer** (see below) — the parser tolerates
-  counts or no counts, `1x`, `(SET) 123` and `*CMDR*` markers, and section headers.
+  list), or a **Moxfield/Archidekt link** — for a link, run `scripts/import_deck.py <url>` to pull it via
+  the site JSON API (it falls back to asking for a paste if the deck is private/unreachable; never invents
+  a list). To analyze, **write the list to a temp file and run the analyzer** (see below) — the parser
+  tolerates counts or no counts, `1x`, `(SET) 123` and `*CMDR*` markers, and section headers.
 - Confirm the **target bracket (1–5)** — the power level to judge the deck *against*. If the user doesn't
   give one, **ask**, and offer to also tell them which bracket the deck actually looks like. Default to
   rating at the deck's apparent bracket if they're unsure. See `references/brackets.md`.

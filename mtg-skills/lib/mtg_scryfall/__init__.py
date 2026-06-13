@@ -19,6 +19,12 @@ Public API:
     load_collection(path) -> dict | None                      # parse a txt/csv/json owned-card export
     sync.status()/pull()/push(msg)/init(url) -> dict          # git-backed workspace sync
     sync.push_database()/pull_database() -> dict              # sync cards.sqlite via Git LFS
+    edhrec.commander/average_deck/theme/budget(name) -> dict  # EDHREC JSON (proven inclusions)
+    decks.fetch_deck(url_or_id) -> dict                       # import an Archidekt/Moxfield list
+    get_json(url) -> obj ; FetchError                         # robust HTTPS+JSON fetch (UA, retry)
+
+All external HTTP goes through the same polite, retrying, HTTPS-only fetcher (mtg_scryfall.http);
+a miss raises FetchError so callers fall back to local data and tell the user which source failed.
 
 Stdlib only — no pip install required.
 """
@@ -33,7 +39,10 @@ from .cli import ensure_ready
 from .arena import TIER_CAPS, BASICS, parse_deck, tally_wildcards
 from .collection import find_collection_file, parse_collection, load_collection
 from .validate import validate_commander_import, validate_arena_import
+from .http import FetchError, get_json
 from . import sync
+from . import edhrec
+from . import decks
 
 __all__ = [
     "default_db_path",
@@ -60,5 +69,9 @@ __all__ = [
     "load_collection",
     "validate_commander_import",
     "validate_arena_import",
+    "FetchError",
+    "get_json",
     "sync",
+    "edhrec",
+    "decks",
 ]

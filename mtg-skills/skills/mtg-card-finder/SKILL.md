@@ -92,7 +92,9 @@ and the deck well enough to find cards *they* will love and that *fit*. Tailor t
 
 **Filling a gap / adding a category / finding synergy / solving a problem — anchor on the deck:**
 - **Get the deck.** Ask them to **paste the decklist** if they have one (a Moxfield/Archidekt export or a
-  `1 Card Name` list), or to describe the commander/archetype, colors, and game plan if they don't. Pull the
+  `1 Card Name` list) — or if they give a Moxfield/Archidekt **link**, run `scripts/import_deck.py <url>`
+  to pull it via the site JSON API (falls back to asking for a paste if the deck is private/unreachable).
+  Otherwise have them describe the commander/archetype, colors, and game plan. Pull the
   commander's (and any keystone card's) real Oracle text from Scryfall so you work from exact wording.
 - **Understand the engine and game plan** — what the deck is *trying to do*, how it currently wins, what its
   best turns look like. You can't judge cohesion without knowing the machine you're adding to.
@@ -140,9 +142,10 @@ points of contact, the better.** Rank candidates by synergy count and take the d
    wipe" → repeatable draw / recursion / draw that triggers off something surviving the wipe), then score the
    same way.
 
-**Source proven inclusions first, then fill:** for Commander, start from **EDHREC** (its high-"synergy"
-ranking is gold here) and **mtgdecks.net**, then use **Scryfall** to fill gaps and dig up spicy multi-synergy
-cards the aggregate buries; for other formats, lean on Scryfall plus current meta sources. **Vet color
+**Source proven inclusions first, then fill:** for Commander, start from **EDHREC's JSON API**
+(`scripts/edhrec_fetch.py "<commander>"` — its high-"synergy" ranking is gold here), then use **Scryfall**
+to fill gaps and dig up spicy multi-synergy cards the aggregate buries; for other formats, lean on Scryfall
+plus the model's meta knowledge (flagged unverified). **Vet color
 identity and legality as you go** — `id<=<identity>` (NOT `c:`, which matches off-identity multicolor cards),
 glance at the **CI** column; one off-identity pip makes a card illegal in a Commander deck.
 
@@ -195,8 +198,11 @@ picks are otherwise close, and flag which shortlisted cards they'd need to buy.
 
 ## How to drive the data sources
 
-Same backbone as the deckbuilding skills — **EDHREC + mtgdecks.net** for proven inclusions, **Scryfall** for
-deep text/type search, color-identity vetting, and **pricing** (`prices.eur` = Cardmarket EUR).
+Same backbone as the deckbuilding skills — **EDHREC's JSON API** (`scripts/edhrec_fetch.py`) for proven
+inclusions, **Scryfall** for deep text/type search, color-identity vetting, and **pricing** (`prices.eur` =
+Cardmarket EUR). Full endpoint/fallback table: `references/data-sources.md`. EDHREC is fetched from
+`json.edhrec.com` with a descriptive UA + retry/backoff — never the Cloudflare HTML; on 403/404 fall back
+to the local Scryfall DB ordered by EDHREC rank and say so.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local SQLite
 database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the **mtg-db** skill) instead
@@ -209,12 +215,12 @@ of preference:
   --limit 30` (reads the local DB, auto-builds on first use; prints name, MV, type, CI, cheapest-printing
   EUR; `--named "Sol Ring"` for one card's full text + price). Fastest path; `function:` queries use the live
   API transparently. **Use `--named` liberally here** — reading exact Oracle text is the core of Phase 3.
-- **No code-exec network, but web tools** → `web_search` for the Scryfall / EDHREC / mtgdecks page, then
-  `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB can be built
-  here — that's the expected fallback.
-- **Neither** → tell the user the environment needs network to `api.scryfall.com`, `edhrec.com`, and
-  `mtgdecks.net`, and offer to proceed from known MTG knowledge with the caveat that prices and the newest
-  cards won't be verified.
+- **No code-exec network, but web tools** → `web_fetch` the **JSON** endpoints directly
+  (`https://json.edhrec.com/pages/commanders/<slug>.json`) and the Scryfall search page; `web_search`
+  first if `web_fetch` needs a search-sourced URL. No DB can be built here — that's the expected fallback.
+- **Neither** → tell the user the environment needs network to `api.scryfall.com` and `json.edhrec.com`,
+  and offer to proceed from known MTG knowledge with the caveat that prices, proven inclusions, and the
+  newest cards won't be verified.
 
 ## Quality bar before you recommend
 

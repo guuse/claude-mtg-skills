@@ -167,8 +167,8 @@ didn't raise? **Agree on the top 2–3 priorities together before proposing any 
 swaps until you and the user are aligned on what this upgrade is actually for.
 
 ### Step 2 — Rank upgrade candidates by impact per euro
-For each gap, gather candidates **primarily from EDHREC and mtgdecks.net** for this commander (what proven
-lists run that this deck lacks), then fill with **Scryfall** for budget- and bracket-appropriate options
+For each gap, gather candidates **primarily from EDHREC's JSON API** (`scripts/edhrec_fetch.py "<commander>"`
+— what proven lists run that this deck lacks), then fill with **Scryfall** for budget- and bracket-appropriate options
 (`references/scryfall-syntax.md`). Favor cards that fix a real weakness *and* synergize with the existing
 theme. Cheaper-but-sufficient beats expensive-but-marginal — the goal is the most improvement within the cap.
 
@@ -216,9 +216,16 @@ say so and propose the next swap rather than shipping it quietly.
 
 ## How to drive the data sources
 
-Same backbone as the deckbuilder — **EDHREC + mtgdecks.net** for proven inclusions, **Scryfall** to fill
+Same backbone as the deckbuilder — **EDHREC's JSON API** for proven inclusions, **Scryfall** to fill
 gaps, enforce color identity, filter by mana value, and **price** every card (`prices.eur` = Cardmarket
-EUR).
+EUR). Full endpoint/fallback table: `references/data-sources.md`.
+
+- **EDHREC** — `scripts/edhrec_fetch.py "<commander>"` (staples/high-synergy/themes; `--average`,
+  `--theme <slug>`, `--budget`), reading `json.edhrec.com` with a descriptive UA + retry/backoff. Never
+  scrape the `edhrec.com` HTML. On 403/404 the script exits non-zero — fall back to the local Scryfall DB
+  ordered by EDHREC rank and tell the user proven-inclusion data is lower-confidence.
+- **A user's current deck by link** — `scripts/import_deck.py <archidekt-or-moxfield-url>` pulls it via
+  the site JSON API; if it's private or errors, ask the user to **paste** the list. Never invent one.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
@@ -230,12 +237,13 @@ tell the user prices may have moved and **ask** whether to refresh before contin
 - **Code execution with network** → `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" "<query>" --limit 30` (reads the
   local DB, auto-builds on first use; color identity, cheapest-printing pricing; `--named "Sol Ring"` for
   one card). Fastest path. `function:` queries use the live API transparently.
-- **No code-exec network, but web tools** → `web_search` for the Scryfall / EDHREC / mtgdecks page, then
-  `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB can be
-  built here — that's the expected fallback.
-- **Neither** → tell the user the environment needs network to `api.scryfall.com`, `edhrec.com`, and
-  `mtgdecks.net`, and offer to proceed from known MTG knowledge with the caveat that prices and the newest
-  cards won't be verified.
+- **No code-exec network, but web tools** → `web_fetch` the **JSON** endpoints directly
+  (`https://json.edhrec.com/pages/commanders/<slug>.json`, `.../average-decks/<slug>.json`) and the
+  Scryfall search page; `web_search` first if `web_fetch` needs a search-sourced URL. No DB can be built
+  here — that's the expected fallback.
+- **Neither** → tell the user the environment needs network to `api.scryfall.com` and `json.edhrec.com`,
+  and offer to proceed from known MTG knowledge with the caveat that prices, proven inclusions, and the
+  newest cards won't be verified.
 
 If there's no clear working directory to write the database to, prompt the user for a path for `.mtg/`
 first.

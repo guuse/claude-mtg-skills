@@ -7,7 +7,7 @@ description: >-
   picking cards that synergize with a commander, or wants a Commander deck within a budget or at a specific
   power bracket. Triggers on phrases like "build me a commander deck", "EDH deck for [commander]", "brew
   around [legendary creature]", "100-card singleton deck", "help me build my Atraxa deck", or any request
-  that pairs a commander name with deckbuilding. The skill pulls proven cards from EDHREC and mtgdecks.net,
+  that pairs a commander name with deckbuilding. The skill pulls proven cards from EDHREC's JSON API,
   fills gaps and prices everything via Scryfall (which carries Cardmarket EUR prices), and applies a
   disciplined 7-step methodology to produce a tuned list with per-card pricing and a budget/bracket target.
 ---
@@ -16,7 +16,7 @@ description: >-
 
 This skill builds a complete, well-tuned 100-card Commander deck around any commander the user
 chooses. It combines two things: **proven card data** (what real players actually run, from EDHREC
-and mtgdecks.net, priced through Scryfall) and a **disciplined 7-step building methodology** that turns a
+via its JSON API, priced through Scryfall) and a **disciplined 7-step building methodology** that turns a
 pile of synergistic cards into a deck that actually functions — correct card-advantage density, enough
 ramp, enough interaction, the right land count, a sensible curve, and real win conditions.
 
@@ -151,8 +151,8 @@ each within the commander's identity and **intersect** — cards appearing under
 multi-synergy hits. **(5) Score** each candidate by its points of contact and keep the densest.
 
 A good test of the result: *could this deck win without ever casting the commander?* If yes, the 99 are
-pulling their weight. Source candidates **primarily from EDHREC and mtgdecks.net** (EDHREC's high-"synergy"
-ranking is exactly this signal), then use **Scryfall to fill gaps** and surface spicy multi-synergy cards the
+pulling their weight. Source candidates **primarily from EDHREC's JSON API** (`scripts/edhrec_fetch.py` —
+its high-"synergy" ranking is exactly this signal), then use **Scryfall to fill gaps** and surface spicy multi-synergy cards the
 aggregate buries. Gather ~40 themed candidates; you'll cut later. Apply the mana-value rubric in
 `references/methodology.md` as a first filter (expensive cards must earn their slot).
 
@@ -214,16 +214,22 @@ doesn't, fix the flagged gap before delivering rather than shipping a low score.
 
 ## How to drive the data sources
 
-The user wants **EDHREC + mtgdecks.net as the backbone** (proven inclusions) and **Scryfall to fill gaps
-and price everything**. Concretely:
+**EDHREC (JSON) is the backbone** for proven inclusions and **Scryfall** fills gaps and prices everything.
+Full endpoint/fallback table: `references/data-sources.md`. Concretely:
 
-1. **EDHREC** — get the commander's top cards and high-synergy cards. Page URL pattern:
-   `https://edhrec.com/commanders/<commander-slug>` (slug = lowercase, spaces→hyphens, drop punctuation,
-   e.g. *Atraxa, Praetors' Voice* → `atraxa-praetors-voice`). The JSON endpoint
-   `https://json.edhrec.com/pages/commanders/<slug>.json` is easier to parse when reachable. EDHREC also
-   has theme/budget pages (e.g. `.../<slug>/budget`) useful under a cap.
-2. **mtgdecks.net** — sample full decklists for the commander to see complete, coherent 100s and common
-   land bases: `https://mtgdecks.net/Commander` then the commander's page.
+1. **EDHREC JSON** — the authoritative "what comparable decks run" source. Use the bundled
+   `scripts/edhrec_fetch.py "<commander>"` for staples, high-synergy cards, and the list of themes;
+   `--average` for a literal ~100-card average decklist, `--theme <slug>` for a theme build, `--budget`
+   for the budget list. It reads `https://json.edhrec.com/pages/commanders/<slug>.json` (slug = lowercase,
+   drop `' , .`, other non-alphanumerics → `-`, e.g. *Atraxa, Praetors' Voice* → `atraxa-praetors-voice`)
+   with a descriptive User-Agent + `Accept: application/json` and retry/backoff. **Never** fetch the
+   Cloudflare-protected HTML at `edhrec.com`. If EDHREC 403s/404s, the script exits non-zero with a clear
+   message — **fall back** to the local Scryfall DB ordered by EDHREC rank and tell the user the
+   proven-inclusion data is lower-confidence.
+2. **A user's existing decklist** — if they give an Archidekt or Moxfield link, run
+   `scripts/import_deck.py <url>` to pull it via the site's JSON API (Archidekt `api/decks/<id>/`,
+   Moxfield `api2.moxfield.com/v3/decks/all/<publicId>`). If the deck is private or the site errors, the
+   script says so — ask the user to **paste** the list instead. Never invent a decklist.
 3. **Scryfall** — the workhorse for filling category gaps, enforcing color identity, filtering by mana
    value, finding cards by oracle text, and **pricing**. Every Scryfall card object carries
    `prices.eur` and `prices.eur_foil`, which are **Cardmarket** prices in euros — use `prices.eur` as the
@@ -247,15 +253,16 @@ tags aren't in bulk data, so those queries are routed to the live Scryfall API a
   price (cheapest printing) as JSON or a table. This is the fastest, most reliable path. Run
   `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --help` for options. The script also fetches a single card's full
   details and price with `--named "Sol Ring"`. `function:` queries transparently use the live API.
-- **No code-execution network, but web tools available** → use `web_search` to surface the relevant
-  Scryfall search page, EDHREC page, or mtgdecks list, then `web_fetch` the result. `web_fetch` only
-  accepts URLs returned by a prior search, so search first (e.g. search `scryfall id<=WB function:ramp`),
-  then fetch the page that comes back. (No database can be built without code execution — that's fine,
+- **No code-execution network, but web tools available** → `web_fetch` the **JSON** endpoints directly
+  (they parse cleanly and don't need scraping): `https://json.edhrec.com/pages/commanders/<slug>.json`
+  for staples/themes, `.../average-decks/<slug>.json` for the average list, and the Scryfall search page
+  for card data. If `web_fetch` needs a URL from a prior search, `web_search` for the Scryfall query or
+  the EDHREC commander page first. (No database can be built without code execution — that's expected,
   this is the fallback.)
 - If neither has network to these domains, tell the user their environment needs network access to
-  `api.scryfall.com`, `edhrec.com`, and `mtgdecks.net` (in Claude.ai/Code this may need enabling in
-  settings, or an org owner may need to allow those domains), and offer to proceed from your own MTG
-  knowledge with the caveat that prices and the latest cards won't be verified.
+  `api.scryfall.com` and `json.edhrec.com` (in Claude.ai/Code this may need enabling in settings, or an
+  org owner may need to allow those domains), and offer to proceed from your own MTG knowledge with the
+  caveat that prices, proven inclusions, and the latest cards won't be verified.
 
 Once the database exists, queries are local and fast; only `function:` tags and a stale-data refresh
 touch the network. If there's no clear working directory to write the database to, prompt the user for

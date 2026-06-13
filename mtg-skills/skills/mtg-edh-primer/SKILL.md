@@ -43,6 +43,9 @@ The user gives the deck one of two ways:
   `$MTG_HOME`.) This is the common path and means the primer lands in the right folder automatically.
 - **Pasted inline** — a Moxfield/Archidekt export or a `1 Card Name` list. Write it to a temp file (e.g.
   `.mtg/decks/edh/<slug>/import.txt` if you're creating the folder, or any temp path).
+- **By link** — a Moxfield/Archidekt URL: run `scripts/import_deck.py <url>` to pull the list via the site
+  JSON API (it falls back to asking for a paste if the deck is private/unreachable; never invents a list),
+  then write its output to a temp file as above.
 
 Identify the **commander** (a Commander-section/`*CMDR*` card, or ask) and confirm the **target bracket (1–5)**
 the deck is meant for — if unsure, rate at the bracket the deck looks like, and say so. If the list isn't ~100

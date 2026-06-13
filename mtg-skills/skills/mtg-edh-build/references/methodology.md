@@ -61,9 +61,10 @@ more often it does something great, and the more the deck "comes alive" with eme
   *(Structural slots — lands, generic ramp, catch-all interaction — fill required roles and are exempt from
   the 2–3 rule, but prefer the version that also synergizes; see `references/synergy.md`.)*
 
-**C. Source proven cards first, then fill.** Per the user's preference: start from **EDHREC** (top cards
-and high-"synergy" cards for this commander) and **mtgdecks.net** (full sample lists). These reflect what
-actually wins. Then use **Scryfall** to (1) fill keyword gaps the popular lists underweight, (2) find
+**C. Source proven cards first, then fill.** Start from **EDHREC's JSON API** via `scripts/edhrec_fetch.py`
+(top cards and high-"synergy" cards for this commander; `--average` for a full sample 100, `--theme`/`--budget`
+for variants). These reflect what actually wins. (See `references/data-sources.md` — never scrape EDHREC's
+HTML; on a 403/404 fall back to the local Scryfall DB ordered by EDHREC rank and say so.) Then use **Scryfall** to (1) fill keyword gaps the popular lists underweight, (2) find
 budget/bracket-appropriate swaps, and (3) discover spicy multi-synergy cards the aggregate data buries.
 
 **D. First-pass cut by the mana-value rubric.** Apply this as you gather (~40 candidates):

@@ -8,8 +8,9 @@ description: >-
   a deck that beats the current Standard meta. Triggers on phrases like "build me a Standard deck", "MTGA
   deck for [card]", "brew around [card] in Standard", "budget Arena Standard deck", "what should I craft",
   or any request pairing Standard/Arena with deckbuilding. Every card is labeled with its rarity and the
-  build respects a wildcard budget tier (1-5). Verifies legality and rarity via Scryfall, reads the live
-  meta from untapped.gg/mtggoldfish, and outputs an Arena import list plus an annotated wildcard-cost
+  build respects a wildcard budget tier (1-5). Verifies legality and rarity via Scryfall, factors in the
+  current Standard meta (from model knowledge, flagged unverified — no bot-fetchable meta source), and
+  outputs an Arena import list plus an annotated wildcard-cost
   breakdown. Starts by asking for the user's MTG Arena collection export and, when given one, builds
   primarily from cards they already own — spending wildcards only to upgrade or fill gaps. For 60-card
   Standard, NOT 100-card Commander/EDH.
@@ -150,7 +151,7 @@ inventory for all steps below.
 2. **Wildcard budget tier (1-5).** Caps how many wildcards of each rarity the deck may require. Defaults
    and the full table live in `references/wildcard-budget.md`. If unsure, suggest Tier 3.
 3. **Match type.** Ask each build: **BO1 ladder** (60 cards, no sideboard — the default ladder experience
-   and what untapped.gg's main meta reflects) or **BO3** (60 + a 15-card sideboard). This changes whether
+   and what the BO1 ladder meta reflects) or **BO3** (60 + a 15-card sideboard). This changes whether
    you build a sideboard and how much you can lean on game-1 meta-teching in the maindeck.
 
 ## The method (centerpiece-first brewing)
@@ -215,9 +216,13 @@ you're already winning is wasted slots and tempo; spend those slots on consisten
 One robust engine beats two fragile ones.
 
 ### Step 5 — Read the meta
-The deck must *compete*, not just combo in a vacuum. Pull the current Standard ladder meta (untapped.gg
-BO1, and mtggoldfish) and note the top decks — typically a fast aggro deck (often mono-red), one or two
-midrange decks, and a control or go-wide deck. Knowing the field tells you what you must survive.
+The deck must *compete*, not just combo in a vacuum. Read the current Standard ladder field — typically a
+fast aggro deck (often mono-red), one or two midrange decks, and a control or go-wide deck — so you know
+what you must survive. **There is no bot-fetchable meta API** (untapped.gg / mtggoldfish are Cloudflare-
+protected and must NOT be scraped), so describe the meta from your own knowledge and **flag it as
+unverified / possibly out of date**, and invite the user to paste a current meta snapshot or a specific
+netdeck. If they give a Moxfield/Archidekt link for a netdeck, `scripts/import_deck.py <url>` will pull it.
+See `references/data-sources.md`.
 
 ### Step 6 — Tech against the meta (answers)
 For each major matchup, make sure the deck has answers, and pick answers that don't hurt your own plan:
@@ -274,10 +279,12 @@ mono-red, or a mana base fighting the curve), fix it before delivering rather th
   cost, type, and oracle text. Key filters (full cookbook in `references/scryfall-syntax.md`):
   `legal:standard` (legal *and* not banned), `game:arena` (exists on Arena), `r:rare` / `r:mythic` etc.
   Every card object has a `rarity` field — surface it for every card.
-- **untapped.gg** (`https://mtga.untapped.gg/constructed/standard`) — the live **BO1 ladder meta** and
-  "what's in Standard" set list. The primary read on the field you're teching against.
-- **mtggoldfish** (`https://www.mtggoldfish.com/metagame/standard`) — Standard metagame %s and full
-  netdeck lists; good for BO3 and for sample mana bases.
+- **Standard / Arena meta** — **no bot-fetchable source.** untapped.gg and mtggoldfish are Cloudflare-
+  protected HTML and **must not be scraped** (they 403 automated fetches). Read the field from the model's
+  own meta knowledge, **explicitly flagged as unverified / possibly stale**, and invite the user to paste a
+  meta snapshot or a netdeck. A specific netdeck given as a **Moxfield/Archidekt link** can be pulled with
+  `scripts/import_deck.py <url>` (site JSON API; falls back to asking for a paste). Never present a scraped
+  or invented metagame percentage as fact. See `references/data-sources.md`.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
@@ -292,13 +299,13 @@ Arena availability, and Standard legality are used, and those move only when a s
   (reads the local DB, auto-builds on first use; Standard-legal + Arena by default, rarity shown), and
   `python "${CLAUDE_SKILL_DIR}/scripts/scryfall_search.py" --deck <import>.txt --tier <N>` to tally the wildcard cost of a
   finished list and check it against the tier caps. Run `--help` for options.
-- **No code-exec network, but web tools** → `web_search` for the Scryfall query / untapped.gg / mtggoldfish
-  page, then `web_fetch` the result (web_fetch only takes URLs from a prior search, so search first). No DB
-  can be built here — that's the expected fallback.
-- **Neither** → tell the user the environment needs network to `api.scryfall.com`, `untapped.gg`, and
-  `mtggoldfish.com`, and offer to proceed from known knowledge with the caveat that legality, rarity, and
-  the current meta are unverified (important: Standard rotates and Arena availability varies, so flag this
-  clearly).
+- **No code-exec network, but web tools** → `web_fetch` the Scryfall search page for card data (and
+  `import_deck.py`'s JSON endpoints aren't reachable, so ask the user to paste any netdeck). Do **not** try
+  to `web_fetch` untapped.gg/mtggoldfish — they're Cloudflare-protected and will fail; rely on the model's
+  meta knowledge, flagged unverified. No DB can be built here — that's the expected fallback.
+- **Neither** → tell the user the environment needs network to `api.scryfall.com`, and offer to proceed
+  from known knowledge with the caveat that legality, rarity, and the current meta are unverified
+  (important: Standard rotates and Arena availability varies, so flag this clearly).
 
 When a collection is in use, the wildcard breakdown must reflect it: count only the cards/copies the user
 does not already own, and list exactly what they need to craft. Re-read the owned list when reconciling

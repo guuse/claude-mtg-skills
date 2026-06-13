@@ -115,11 +115,12 @@ surface under several handles are the multi-synergy finds.
 
 ### Source proven first, then fill, then dig
 
-1. **EDHREC** (Commander) — the commander's top cards and, crucially, its **high-"synergy"** cards: the ones
-   that show up far more in *this* deck than in the color pie at large. That synergy ranking is a gift for this
-   skill. Theme and budget pages help under a cap.
-2. **mtgdecks.net** — full sample lists to see complete, coherent shells and what the proven decks lean on.
-3. **Scryfall** — the workhorse for what the aggregates miss: fill keyword gaps, find budget/bracket swaps,
+1. **EDHREC JSON** (Commander) — via `scripts/edhrec_fetch.py`: the commander's top cards and, crucially, its
+   **high-"synergy"** cards: the ones that show up far more in *this* deck than in the color pie at large. That
+   synergy ranking is a gift for this skill. `--theme <slug>`, `--budget`, and `--average` give variants and a
+   full sample list. (See `references/data-sources.md` — never scrape the HTML; on a miss fall back to the local
+   Scryfall DB ordered by EDHREC rank and say so.)
+2. **Scryfall** — the workhorse for what the aggregates miss: fill keyword gaps, find budget/bracket swaps,
    and surface spicy multi-synergy cards buried below the popularity fold. For non-Commander formats, lean on
    Scryfall plus current meta sources.
 

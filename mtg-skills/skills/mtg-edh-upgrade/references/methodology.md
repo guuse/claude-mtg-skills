@@ -50,9 +50,10 @@ alive" with emergent interactions. This is also what makes each game different a
   creatures entering with counters, and (c) periodically exiles-and-returns one of your creatures hits
   *enters*, *leaves the battlefield*, and re-trigger-your-ETB all at once — three points of contact.
 
-**C. Source proven cards first, then fill.** Per the user's preference: start from **EDHREC** (top cards
-and high-"synergy" cards for this commander) and **mtgdecks.net** (full sample lists). These reflect what
-actually wins. Then use **Scryfall** to (1) fill keyword gaps the popular lists underweight, (2) find
+**C. Source proven cards first, then fill.** Start from **EDHREC's JSON API** via `scripts/edhrec_fetch.py`
+(top cards and high-"synergy" cards for this commander; `--average`/`--theme`/`--budget` for full lists and
+variants). These reflect what actually wins. (See `references/data-sources.md` — never scrape EDHREC's HTML;
+on a 403/404 fall back to the local Scryfall DB ordered by EDHREC rank and say so.) Then use **Scryfall** to (1) fill keyword gaps the popular lists underweight, (2) find
 budget/bracket-appropriate swaps, and (3) discover spicy multi-synergy cards the aggregate data buries.
 
 **D. First-pass cut by the mana-value rubric.** Apply this as you gather (~40 candidates):

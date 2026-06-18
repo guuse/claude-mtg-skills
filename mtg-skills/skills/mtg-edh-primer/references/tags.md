@@ -5,22 +5,43 @@ A **canonical, controlled list of tag names** so every primer tags the same job 
 tag actually fits**. Nothing is universal: a mono-white deck has no `ManaDork`, a deck with no sweepers has no
 `BoardWipe`. Never invent a role that isn't on the battlefield.
 
-Two kinds of tag, both drawn from this vocabulary:
+Tags are organised into **two ordered tiers**, and every card carries **one *or more*** of them — **every
+category it genuinely belongs to** (a card that both ramps and is a land gets both; a creature that is an
+evasive enabler *and* a draw engine gets both). Tag honestly: only where the job is actually present, but
+don't force a card into a single box when it does several jobs.
 
-- **Role tags** — what a card *mechanically does*, format-agnostic. Common, but applied only where present.
-- **Theme tags** — how a card serves *this deck's* engine. Derived from the deck's identity; coin a new one
-  when the deck's strategy isn't covered, **preferring an existing name when it fits**.
+**Tier 1 — the engine (numbered `1)`, `2)`, `3)`…).** The deck's **core game plan**: the 2–5 steps of *how
+this deck actually wins*, named in the **flavour of the deck** and **ordered as the plan executes**. These are
+**deck-specific** — derived from the deck's identity, not a fixed list. A ninjutsu deck's engine might be
+`1) Unblockables` → `2) Ninjutsu` → `3) Ninjutsu - Targets` → `4) Extra Turns`; a reanimator deck's might be
+`1) Discard Outlets` → `2) Fatties` → `3) Reanimation`. Name them with **taste** — descriptive and evocative
+of the deck, **never cringe** (`3) Ninjutsu - Targets`, not `3) Sneaky Backstab Bois`).
 
-Each card carries **exactly one** tag in the import — its single **most-defining role** in this deck. When a
-card does several jobs, pick the **primary** one. (One tag per card keeps the Tag-grouped view in Moxfield
-readable: every card lands in exactly one group.) That same primary tag decides which section explains the
-card **once** in `primer.md`. **The commander is never tagged** — Moxfield already labels it in its own zone.
+**Tier 2 — the support pillars (lettered `A)`, `B)`, `C)`…).** The near-universal jobs every EDH deck needs,
+**after** the engine and in this fixed order: `A) Mana Advantage` (ramp/dorks/cost-reduction), `B) Card
+Advantage` (draw), `C) Interaction` (removal, wipes, counters, taxes), `D) Resilience` (protection, recursion,
+saves), `E) Lands` (always last). Use only the pillars the deck actually has, keep the letter order, and let
+`Lands` be the final letter.
 
-## Role tags (use when present)
+**Why the prefixes:** Moxfield's *Group-by-Tag* view sorts tags **alphanumerically**, so the `1) … A) …`
+prefixes force the groups to render in a **deliberate reading order** — the engine first (in execution
+sequence), then the support pillars — instead of a meaningless A–Z scramble. The role/theme vocabulary below
+is the **menu of jobs** that feed these categories, not the literal tag names.
 
+Cards land in multiple groups, and that's intended — Group-by-Tag then reads like a guided tour of the deck.
+In `primer.md`, explain each card **once**, under its **most-defining** category (prefer the engine tier when a
+card is both an engine piece and a support piece). **The commander is never tagged** — Moxfield already labels
+it in its own zone.
+
+## The job menu (what feeds each category)
+
+These are the **jobs** a card can do — the raw material you sort into the tiers above, **not** the literal tag
+text. A job usually maps to a support pillar (`Ramp`/`ManaDork`→`A) Mana Advantage`, `Draw`→`B) Card
+Advantage`, `Removal`/`BoardWipe`/counters→`C) Interaction`, `Protection`/`Recursion`→`D) Resilience`,
+`Land`→`E) Lands`); the **theme** jobs below typically become the deck's **numbered engine** categories.
 (There is no `Commander` tag — the commander line carries no tag at all.)
 
-| Tag | Meaning |
+| Job | Meaning |
 |---|---|
 | `Ramp` | Non-creature mana acceleration — rocks, rituals, land-ramp, cost reduction. |
 | `ManaDork` | A creature that taps for mana. (Sub-role of ramp; use when the deck leans on dorks.) |
@@ -52,24 +73,28 @@ If you coin a new theme tag, define it in one line in the primer's tag legend so
 
 ## How tags appear in `moxfield-import.txt`
 
-Each line takes a **single** tag, **PascalCase, no spaces** (`#SacOutlet`, not `#sac outlet`). Use a
-**deck-specific** tag (`#Tag`), not a global one (`#!Tag`). **The commander line (first) carries no tag:**
+Each line carries **one or more** tags. Each tag is written `#` immediately followed by its name (prefix
+included); **Moxfield ends a tag at the next `#`**, so multi-word, space-containing tags need **no quoting** —
+just separate tags with a space: `#3) Ninjutsu - Targets`. Use **deck-specific** tags (`#…`), not global ones
+(`#!…`). **The commander line (first) carries no tag:**
 
 ```
-1 Atraxa, Praetors' Voice (NCC) 2
+1 Satoru Umezawa
 
-1 Ghalta, Primal Hunger (RIX) 130 #Finisher
-1 Llanowar Elves (M19) 314 #ManaDork
-6 Forest (DOM) 266 #Land
+1 Dauthi Voidwalker #1) Unblockables #B) Card Advantage #C) Interaction
+1 Silver-Fur Master #2) Ninjutsu #A) Mana Advantage
+1 Sol Ring #A) Mana Advantage
+10 Island #E) Lands
 ```
 
-Build the file from the deck's `import.txt` (commander first, blank line, then the 99) and append **one** tag
-per non-commander line. Each line — the card **name and its exact `(SET) collector#` printing** — must stay
-byte-for-byte identical to `import.txt`; you only append the trailing ` #Tag`. (See
+Order the tags on each line in tier order (`1)…2)…` then `A)…B)…`) so the file reads consistently. Build it
+from the deck's `import.txt` (commander first, blank line, then the 99) — keep each card **name and its exact
+`(SET) collector#` printing** byte-for-byte identical, only appending the trailing ` #…` tags. (See
 https://moxfield.com/help/adding-cards — line format `<qty> <name> (SET) *F* *A* <#> #tag #!globaltag`.)
 
 **Applying the tags — Bulk Edit, not Import.** Moxfield's **Import / netdeck** screen *ignores* `#Tags`, so
 pasting `moxfield-import.txt` there gets you the cards with **no** tags. To apply them, open the deck →
 **More → Bulk Edit** and paste `moxfield-import.txt` into the Bulk Edit box (or build the deck first via
-Import, then re-paste the tagged list into Bulk Edit). Then **group by Tag** to see each card in its one role
-group. Tell the user this in the primer's Moxfield usage note.
+Import, then re-paste the tagged list into Bulk Edit). Then **group by Tag** to see the deck in deliberate
+order — the numbered engine groups first, then the lettered support pillars. Tell the user this in the primer's
+Moxfield usage note.

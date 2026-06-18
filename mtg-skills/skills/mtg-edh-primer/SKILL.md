@@ -86,18 +86,21 @@ Read the commander + every card's Oracle text and match the deck to one or more 
 any **two-card combo** (matters for bracket). Note the deck's speed (from curve + ramp) — it sets the play
 guide's turn bands.
 
-### Step 2 — Tag every card (exactly one tag each)
-Using `references/tags.md`, give each non-commander card **exactly one** tag — its single **most-defining
-role** in *this* deck (role tag where a function dominates, theme tag where the deck's engine is the point).
-When a card does several jobs, pick the **primary** one; that one tag also decides which section explains it.
-This keeps the Tag-grouped overview readable — every card lands in exactly one group. **Never tag the
-commander** — Moxfield labels it in its own zone, so the commander line gets no tag.
+### Step 2 — Tag every card (one or more tags, ordered tiers)
+Using `references/tags.md`, tag each non-commander card with **every category it genuinely belongs to** — a
+card that does several jobs gets several tags (e.g. an evasive creature that's also a draw engine *and*
+removal). Build tags in **two ordered tiers**: a **numbered engine** (`1) … 2) … 3) …`) naming *how this deck
+wins* in execution order, in the **flavour of the deck** (tasteful, never cringe — `3) Ninjutsu - Targets`,
+not `3) Sneaky Backstab Bois`), and the **lettered support pillars** (`A) Mana Advantage`, `B) Card Advantage`,
+`C) Interaction`, `D) Resilience`, `E) Lands`) for the universal jobs, lands last. The prefixes force
+Moxfield's Group-by-Tag view to render in deliberate order. **Never tag the commander** — Moxfield labels it in
+its own zone, so the commander line gets no tag.
 
 ### Step 3 — Write the per-card lines
 **One tight line per card, in the context of *this* deck** — its job here, not its generic Oracle text. Give
 **marquee/engine cards 2–3 lines**. Every nonland card and every nonbasic/utility land gets a line; **collapse
-basic lands to one summary line** (`6 Forest · 6 Swamp — fixing`), never one line per basic. Group cards under
-their primary tag.
+basic lands to one summary line** (`6 Forest · 6 Swamp — fixing`), never one line per basic. In the prose,
+group each card under its **most-defining** category (prefer the engine tier when a card spans both tiers).
 
 ### Step 4 — Write the play guide
 - **Mulligan / opening hand** — what to keep, what to ship.
@@ -145,19 +148,23 @@ build/upgrade's status + plain-list outputs):
      summary, not a full analysis.
    - **TL;DR** — 2–3 sentences: archetype, how it plays, how it wins.
    - **How it wins** — the named win conditions (Step 1).
-   - **Card roles & tags** — a one-line tag legend, then cards grouped by primary tag with their one-line
-     explanations (Step 3). State that the **same single tag per card** is in `moxfield-import.txt`, and that
-     **the tags only take effect via Moxfield's Bulk Edit — not the Import/netdeck screen** (see below); once
-     applied, group by Tag in Moxfield for a clean role overview.
+   - **Card roles & tags** — a one-line legend naming the deck's **numbered engine tiers** and the lettered
+     support pillars, then cards grouped by their most-defining tag with one-line explanations (Step 3). State
+     that the **same tags (one or more per card)** are in `moxfield-import.txt`, and that **the tags only take
+     effect via Moxfield's Bulk Edit — not the Import/netdeck screen** (see below); once applied, group by Tag
+     in Moxfield to read the deck in deliberate order.
    - **Play guide** — mulligan, early/mid/late, common misplays (Step 4).
    - **Strengths & weaknesses** — and how to play around the weaknesses.
    It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab.
-2. **`moxfield-import.txt`** — the 100-card list with **exactly one** deck-defining `#Tag` per non-commander
-   card (see `references/tags.md`), built from `import.txt` so each card line — name **and** its exact
-   `(SET) collector#` printing — stays byte-for-byte identical. **The commander comes first and carries no
-   `#Tag`** (Moxfield labels it in its own zone), then a blank line, then the 99 each with their single tag.
-   Include a short usage note in `primer.md` explaining that Moxfield's **Import/netdeck screen ignores the
-   `#Tags`** — paste this file into Moxfield's **Bulk Edit** box instead to apply them.
+2. **`moxfield-import.txt`** — the 100-card list where each non-commander card carries **one or more**
+   deck-defining tags (see `references/tags.md`): a **numbered engine** (`1) … 2) …`, deck-flavoured, in
+   execution order) plus the **lettered support pillars** (`A) … E) Lands`), each tag written `#…` (no
+   quoting — Moxfield ends a tag at the next `#`) and ordered by tier on the line. Built from `import.txt` so
+   each card line — name **and** its exact
+   `(SET) collector#` printing — stays byte-for-byte identical (only the trailing `#…` tags are appended).
+   **The commander comes first and carries no tag** (Moxfield labels it in its own zone), then a blank line,
+   then the 99. Include a short usage note in `primer.md` explaining that Moxfield's **Import/netdeck screen
+   ignores the `#Tags`** — paste this file into Moxfield's **Bulk Edit** box instead to apply them.
 
 Use the file-presentation tool to share both once written.
 
@@ -166,9 +173,10 @@ Use the file-presentation tool to share both once written.
 - **Grounded:** every win condition and per-card line reflects the actual Oracle text (from `analyze_deck.py`),
   not the card name.
 - **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; **every
-  non-commander card in `moxfield-import.txt` carries exactly one fitting tag, the commander line carries
-  none**, and each line (name + `(SET) collector#` printing) matches `import.txt` exactly (it still sums to
-  100). The Bulk-Edit-not-Import workflow is stated in the primer.
+  non-commander card in `moxfield-import.txt` carries one or more fitting tags (numbered engine + lettered
+  pillars, written `#…` unquoted), the commander line carries none**, and each line (name + `(SET) collector#`
+  printing) matches `import.txt` exactly (it still sums to 100). The Bulk-Edit-not-Import workflow is stated in
+  the primer.
 - **Honest rating:** the primer opens with the rating — a one-line headline, the compact per-dimension
   scorecard with the numbers behind each score, and the biggest-gaps + cheapest-fixes line — scored against the
   rubric at the stated bracket, with the ★≠bracket rule shown and mis-bracketing called out.

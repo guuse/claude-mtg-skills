@@ -21,7 +21,8 @@ Public API:
     sync.push_database()/pull_database() -> dict              # sync cards.sqlite via Git LFS
     edhrec.commander/average_deck/theme/budget(name) -> dict  # EDHREC JSON (proven inclusions)
     decks.fetch_deck(url_or_id) -> dict                       # import an Archidekt/Moxfield list
-    get_json(url) -> obj ; FetchError                         # robust HTTPS+JSON fetch (UA, retry)
+    mtgtop8.fetch_meta/fetch_deck/top_decklists(fmt) -> ...   # live metagame + real decklists
+    get_json(url) -> obj ; get_text(url) -> str ; FetchError  # robust HTTPS fetch (UA, retry)
 
 All external HTTP goes through the same polite, retrying, HTTPS-only fetcher (mtg_scryfall.http);
 a miss raises FetchError so callers fall back to local data and tell the user which source failed.
@@ -39,10 +40,11 @@ from .cli import ensure_ready
 from .arena import TIER_CAPS, BASICS, parse_deck, tally_wildcards
 from .collection import find_collection_file, parse_collection, load_collection
 from .validate import validate_commander_import, validate_arena_import
-from .http import FetchError, get_json
+from .http import FetchError, get_json, get_text
 from . import sync
 from . import edhrec
 from . import decks
+from . import mtgtop8
 
 __all__ = [
     "default_db_path",
@@ -71,7 +73,9 @@ __all__ = [
     "validate_arena_import",
     "FetchError",
     "get_json",
+    "get_text",
     "sync",
     "edhrec",
     "decks",
+    "mtgtop8",
 ]

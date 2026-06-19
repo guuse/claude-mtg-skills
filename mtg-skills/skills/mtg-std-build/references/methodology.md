@@ -6,9 +6,15 @@ actually win on the Arena ladder.** Brewing is iterative and a little bit of a g
 experiments; that's normal and good. One new card from a new set can unlock a deck you shelved months ago.
 
 There is no single correct way to build. Two healthy entry points:
+- **Meta deck with your tweaks** — you take a known ladder archetype and adjust it to taste.
 - **Original brew** — you pick a card that calls to you and build something creative around it.
-- **Meta deck with your tweaks** — you take a known ladder archetype and adjust it to taste. Equally valid;
-  most players do a mix.
+
+**For Arena ladder, both are netdeck-anchored.** The skill pulls real, current decklists from mtgtop8 (see
+`references/data-sources.md`) and builds by adapting a proven list — even a pet card is *grafted into the
+proven shell that best supports it* rather than surrounded by a from-scratch synergy web. The centerpiece-first
+brewing below is the **how-to for that graft and for choosing flex slots**, not a license to assemble 60 cards
+by hand: that path is what made earlier builds basic and incohesive. Pure from-scratch brewing is reserved for
+a genuinely fringe card with no existing home, flagged to the user as experimental.
 
 ---
 
@@ -86,13 +92,17 @@ robust engine beats two fragile ones stapled together.
 
 ## Step 5 — Read the meta
 
-The deck has to *compete*. Before finalizing, read the current Standard ladder field. **There is no
-bot-fetchable meta source** — untapped.gg and mtggoldfish are Cloudflare-protected HTML and must **not** be
-scraped (see `references/data-sources.md`). So:
+The deck has to *compete*. Read the current Standard field from **mtgtop8.com** with
+`scripts/mtgtop8_fetch.py --meta` (archetypes + shares) — it's the one bot-fetchable source; untapped.gg,
+mtggoldfish, mtgdecks, and aetherhub all Cloudflare-block automated fetches and must **not** be scraped (see
+`references/data-sources.md`). This is also where you got the decklists you're building from, so by this point
+you already know the field. If mtgtop8 is unreachable:
 - Describe the field from your own meta knowledge, **explicitly flagged as unverified / possibly stale**.
 - Invite the user to paste a current meta snapshot or a specific netdeck. A Moxfield/Archidekt netdeck link
   can be pulled with `scripts/import_deck.py <url>`.
 - Never present a scraped or invented metagame percentage as fact.
+Exact shares on mtgtop8 lag the very latest ladder a little — treat percentages as approximate, but the
+**lists are real** recent results.
 
 Note the top few decks. The ladder usually has a fast aggro deck (frequently mono-red), one or two
 midrange decks, and a control or go-wide deck. This is the gauntlet your brew must survive — an ambitious,

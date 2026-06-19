@@ -23,7 +23,7 @@ import urllib.request
 
 # Version is kept in sync with the plugin manifest by hand; the UA only needs a coarse
 # marker so site operators can identify (and, if they must, throttle) the client.
-USER_AGENT = "ClaudeMTGSkills/1.10 (+https://github.com/guuse/claude-mtg-skills)"
+USER_AGENT = "ClaudeMTGSkills/1.13 (+https://github.com/guuse/claude-mtg-skills)"
 DEFAULT_HEADERS = {"User-Agent": USER_AGENT, "Accept": "application/json"}
 
 # Statuses worth retrying — rate limiting and server-side hiccups, not 4xx "you asked
@@ -86,4 +86,50 @@ def get_json(url, headers=None, timeout=30, retries=3, backoff=1.0, delay=0.1):
             reason = getattr(e, "reason", e)
             raise FetchError(f"could not reach {url}: {reason}", url=url)
     # Defensive: the loop always returns or raises, but keep mypy/readers happy.
+    raise FetchError(f"failed to fetch {url}: {last}", url=url)  # pragma: no cover
+
+
+# HTML/plain-text Accept header, for the few sources that publish parseable HTML or a
+# plain-text export rather than JSON (e.g. mtgtop8's decklist pages and `mtgo?d=` export).
+TEXT_HEADERS = {"User-Agent": USER_AGENT, "Accept": "text/html,text/plain,*/*"}
+
+
+def get_text(url, headers=None, timeout=30, retries=3, backoff=1.0, delay=0.1):
+    """GET `url` and return the decoded text body, with the same politeness/retry
+    behaviour as `get_json` but without JSON parsing.
+
+    Used for sources that aren't JSON APIs — primarily mtgtop8 (plain-HTML metagame and
+    archetype pages, plain-text `mtgo?d=` decklist export), which serves a real
+    User-Agent fine and is **not** behind Cloudflare. Raises `FetchError` on a permanent
+    failure or once retries are exhausted, so callers fall back and say which source failed.
+    """
+    if not url.lower().startswith("https://"):
+        raise FetchError(f"refusing non-HTTPS URL: {url}", url=url)
+
+    hdrs = dict(TEXT_HEADERS)
+    if headers:
+        hdrs.update(headers)
+
+    last = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=hdrs)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read().decode("utf-8", "replace")
+            if delay:
+                time.sleep(delay)
+            return raw
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code in TRANSIENT_STATUS and attempt < retries:
+                time.sleep(backoff * (2 ** attempt))
+                continue
+            raise FetchError(f"HTTP {e.code} from {url}", url=url, status=e.code)
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = e
+            if attempt < retries:
+                time.sleep(backoff * (2 ** attempt))
+                continue
+            reason = getattr(e, "reason", e)
+            raise FetchError(f"could not reach {url}: {reason}", url=url)
     raise FetchError(f"failed to fetch {url}: {last}", url=url)  # pragma: no cover

@@ -10,9 +10,10 @@ A Claude Code plugin bundling **Magic: The Gathering** skills.
   bracket ignoring budget first, then **budgets down by role-preserving swaps**; Scryfall handles
   gap-filling and Cardmarket (EUR) pricing. Reports the deck's actual (strict) bracket + how to move up.
 - **[mtg-std-build](skills/mtg-std-build/SKILL.md)** — builds a 60-card
-  MTG Arena **Standard** deck, centerpiece-first and tuned against the current ladder meta
-  (from model knowledge — no bot-fetchable meta source; blocked sites are never scraped), costed
-  in **Arena wildcards** by rarity against a budget tier and your owned collection.
+  MTG Arena **Standard** deck that's **meta-relevant and cohesive**: it starts from **real, current
+  tournament decklists pulled from mtgtop8.com** and adapts a proven list to your centerpiece/archetype,
+  the live ladder meta, your owned collection, and a wildcard budget tier — rather than brewing a 60 from
+  scratch. Costed in **Arena wildcards** by rarity; supports BO1 and BO3 + sideboard.
 - **[mtg-edh-upgrade](skills/mtg-edh-upgrade/SKILL.md)** — improves an
   **existing** Commander deck you paste in: diagnoses it against the same methodology and **comparable
   proven lists**, then recommends the highest-impact **role-preserving** swaps within a budget (usually

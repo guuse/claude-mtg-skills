@@ -30,6 +30,20 @@ a miss raises FetchError so callers fall back to local data and tell the user wh
 Stdlib only — no pip install required.
 """
 
+# Every bundled script is a CLI tool that prints status with Unicode glyphs (✓ ✗ → • ★)
+# and card names with accents (é, ö, …), and they all import this package before printing.
+# On a non-UTF-8 console — notably Windows' default cp1252 — that raises UnicodeEncodeError
+# mid-output and crashes the run. Force UTF-8 on stdout/stderr at import time so output is
+# never lossy or fatal. Guarded: under pytest or other wrappers the streams are replaced by
+# objects without `.reconfigure` (or that reject it), where we simply leave them as-is.
+import sys as _sys
+
+for _stream in (_sys.stdout, _sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")  # Python 3.7+ TextIOWrapper
+    except (AttributeError, ValueError, OSError):
+        pass
+
 from .paths import default_db_path, find_mtg_dir, workspace_paths
 from .query import (
     search, named, to_sql, SUPPORTED_FALLBACK, arena_lookup, arena_table_present,

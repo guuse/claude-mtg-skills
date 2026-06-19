@@ -102,6 +102,15 @@ its own zone, so the commander line gets no tag.
 basic lands to one summary line** (`6 Forest · 6 Swamp — fixing`), never one line per basic. In the prose,
 group each card under its **most-defining** category (prefer the engine tier when a card spans both tiers).
 
+**Card names are Moxfield card links, never code blocks.** Every time a card is named *anywhere* in
+`primer.md` — per-card lines, "How it wins", the play guide, the rating's cheapest-fixes note, weaknesses,
+everywhere — wrap the exact card name in double square brackets: `[[Sheoldred, Whispering One]]`, **not**
+`` `Sheoldred, Whispering One` `` and not bare text. Moxfield renders `[[Name]]` as a hover-preview link to the
+card image; backticks render as dead monospace and waste the feature. The text inside the brackets must be the
+real card name including punctuation (matching is case-insensitive); keep any annotation outside the brackets —
+`[[Guardian Project]] (€2)`. Reserve backticks for things that are **not** card names: mana costs (`{2}{U}{B}`),
+the basic-land summary line, and literal file/code snippets.
+
 ### Step 4 — Write the play guide
 - **Mulligan / opening hand** — what to keep, what to ship.
 - **Early / Mid / Late** — three phases with **deck-tuned turn bands** (default ≈T1–4 / T4–8 / T8+; shift them
@@ -155,7 +164,8 @@ build/upgrade's status + plain-list outputs):
      in Moxfield to read the deck in deliberate order.
    - **Play guide** — mulligan, early/mid/late, common misplays (Step 4).
    - **Strengths & weaknesses** — and how to play around the weaknesses.
-   It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab.
+   It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab. **Every card name is a
+   `[[Card Name]]` link** (Step 3), so the published primer shows a hover preview of each card.
 2. **`moxfield-import.txt`** — the 100-card list where each non-commander card carries **one or more**
    deck-defining tags (see `references/tags.md`): a **numbered engine** (`1) … 2) …`, deck-flavoured, in
    execution order) plus the **lettered support pillars** (`A) … E) Lands`), each tag written `#…` (no
@@ -172,6 +182,9 @@ Use the file-presentation tool to share both once written.
 
 - **Grounded:** every win condition and per-card line reflects the actual Oracle text (from `analyze_deck.py`),
   not the card name.
+- **Hover-linked cards:** every card name in `primer.md` is wrapped as a `[[Card Name]]` Moxfield link (never a
+  backtick code block), so each renders as a hover-preview card; backticks are reserved for mana costs, the
+  basic-land summary, and literal snippets.
 - **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; **every
   non-commander card in `moxfield-import.txt` carries one or more fitting tags (numbered engine + lettered
   pillars, written `#…` unquoted), the commander line carries none**, and each line (name + `(SET) collector#`

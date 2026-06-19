@@ -19,7 +19,7 @@ flagged as **reduced confidence**.
 | Card data, legality, rarity, Arena availability, **prices** (EUR/Cardmarket), bulk | **Scryfall** | local SQLite DB built from `api.scryfall.com/bulk-data`; live `api.scryfall.com/cards/search` for `function:`/`otag:` | local DB → live API → model knowledge (flag prices/newest cards unverified) |
 | Commander staples, high-synergy cards, themes, budget lists, **average decklists** | **EDHREC JSON** | `json.edhrec.com/pages/...` (see below) | EDHREC JSON → local Scryfall DB (`order=edhrec` + `is:gamechanger`/`function:`) + model knowledge (flag "proven inclusions" reduced) |
 | A specific user's online decklist | **Archidekt / Moxfield JSON APIs** | `archidekt.com/api/decks/<id>/`, `api2.moxfield.com/v3/decks/all/<publicId>` | site API → ask the user to **paste** the list |
-| Standard / Arena ladder meta | *No reliable bot-fetchable source* | — | model knowledge of the current meta, **explicitly flagged unverified** (see Standard meta below) |
+| Standard / Arena meta **+ real decklists** | **mtgtop8.com** (plain HTML + plain-text export) | `format?f=ST`, `archetype?a=<id>&f=ST`, `mtgo?d=<deckid>` via `scripts/mtgtop8_fetch.py` | mtgtop8 → model meta knowledge (flag unverified) + ask user to paste a netdeck |
 
 ## Scryfall — the backbone
 
@@ -60,17 +60,29 @@ https://api2.moxfield.com/v3/decks/all/<publicId>     # boards.<board>.cards{}.c
 `<publicId>` is the last segment of a Moxfield deck URL. If the deck is private or the
 API errors, **ask the user to paste the list** — never invent one.
 
-## Standard / Arena meta — treat blocked sites as unavailable
+## Standard / Arena meta + decklists — use mtgtop8
 
-**untapped.gg, mtggoldfish, and mtgdecks are Cloudflare-protected HTML and block
-automated fetches — do NOT scrape them.** There is no reliable free, bot-fetchable JSON
-meta API for Standard. When you need the current ladder field:
+**mtgtop8.com is bot-fetchable** — it serves plain HTML to a descriptive User-Agent and
+exposes a plain-text decklist export, so (unlike the blocked sites below) it can be fetched
+through the shared `http.get_text`. It is the source the Standard skills **build from**:
+start from real, current tournament lists, then adapt. Use `scripts/mtgtop8_fetch.py`:
+
+```
+mtgtop8.com/format?f=ST            # metagame breakdown: archetypes, shares, ids   (--meta)
+mtgtop8.com/archetype?a=<id>&f=ST  # recent decklists under one archetype          (--archetype <id>)
+mtgtop8.com/mtgo?d=<deckid>        # one decklist as plain-text <qty> <name>        (--deck <id>)
+```
+
+**untapped.gg, mtggoldfish, mtgdecks, and aetherhub are Cloudflare-protected and 403
+automated fetches — do NOT scrape them.** mtgtop8's metagame **shares** lag the very latest
+ladder a little (treat percentages as approximate); the **decklists are real** recent
+results. If mtgtop8 is unreachable:
 
 1. Use Scryfall (`legal:standard`, `game:arena`) for what *exists and is legal*.
 2. Describe the current meta from your own knowledge, **explicitly flagged as unverified
    / may be out of date**, and invite the user to paste a meta snapshot or a specific
    netdeck (which `import_deck.py` can ingest if it's a Moxfield/Archidekt link).
-3. Never present a scraped or invented metagame percentage as fact.
+3. Never present a scraped or invented metagame percentage or decklist as fact.
 
 ## Fallback wording (always tell the user)
 

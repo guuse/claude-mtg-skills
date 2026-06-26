@@ -43,13 +43,24 @@ fewer check-ins than an upgrade) but never one-shot: confirm the plan, then conf
 
 ## The deliverable
 
-Always produce **two files** at the end (the user expects both):
+Always produce **three files** at the end (the user expects all three):
 
-1. **An annotated decklist** (`<commander>-deck.md`) — cards grouped by role (Commander, Lands, Ramp,
-   Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing the card name, mana
-   value, a one-line reason it's in the deck (its inclusion-rate in the comparable lists or its synergy
-   points of contact), and its Cardmarket price in EUR. Include the category counts, the total deck price,
-   a short "how the deck wins" paragraph, and these **build-transparency** sections:
+1. **The importable, role-tagged list** (`import.txt`) — the 100 cards as `1 Card Name`, ready to paste into
+   Moxfield / Archidekt / mtggoldfish, **and** carrying each non-commander card's role tags so it doubles as the
+   Moxfield tag source (no separate plain + tagged files — `import.txt` is the single source of truth). Commander
+   first on its own line **with no tag**, blank line, then the 99. Tag each card with the **two-tier scheme** in
+   `../mtg-edh-primer/references/tags.md`: a deck-flavoured **numbered engine** (`#1) … #2) …`, in execution
+   order) then the **lettered support pillars** (`#A) Mana Advantage … #E) Lands`), `#…` unquoted, tier-ordered on
+   the line. Note in `primer.md` that Moxfield's Import screen ignores `#tags` — apply them via **More → Bulk
+   Edit**.
+2. **The publish-ready primer** (`primer.md`) — **always created** (this is public, Moxfield-pasteable info):
+   header + rating headline, TL;DR, how it wins, **card roles & tags** (the numbered-engine/lettered-pillar legend,
+   then cards grouped by their most-defining tag with one-line explanations), play guide, strengths/weaknesses.
+   **Link every card with Moxfield's `[[Card Name]]` syntax** (commander included) so the primer renders card
+   links/hovers on Moxfield. Follow the structure + quality bar in `../mtg-edh-primer/SKILL.md`.
+3. **Private status notes** (`deck.md`) — **private** working notes, *not* the public write-up: total price &
+   owned-vs-needed buylist, the **build-transparency** sections below, and the **Deck Rating** scorecard. Keep the
+   per-card explanations in `primer.md`, not here.
    - **Reference (pre-budget) base** — the solid target-bracket deck before budgeting, with its total price.
      (Omit only if the user set no budget cap.)
    - **Budget swaps** — every reduction as **cut `<card>` (€X) → add `<card>` (€Y)** with the shared
@@ -58,12 +69,10 @@ Always produce **two files** at the end (the user expects both):
      Changer count and combo/MLD/extra-turn confirmation), stated against the target if they differ, and a
      **"what's needed to go up one bracket" (and what would drop it)** note.
    - **Deck Rating** — an overall ★ rating at its bracket plus the per-dimension scorecard (see "Step 10").
-2. **A plain importable list** (`<commander>-import.txt`) — one card per line as `1 Card Name`, ready to
-   paste into Moxfield / Archidekt / mtggoldfish. Put the commander on its own first line.
 
-Use the `present_files` tool to share both, and **save them in their own folder under
-`.mtg/decks/edh/`** in the user's current working directory: `.mtg/decks/edh/<deck-slug>/deck.md` and
-`.mtg/decks/edh/<deck-slug>/import.txt`. Create the folder if it doesn't exist. (Commander/EDH decks
+Use the `present_files` tool to share all three, and **save them in their own folder under
+`.mtg/decks/edh/`** in the user's current working directory: `.mtg/decks/edh/<deck-slug>/import.txt`,
+`.mtg/decks/edh/<deck-slug>/primer.md`, and `.mtg/decks/edh/<deck-slug>/deck.md`. Create the folder if it doesn't exist. (Commander/EDH decks
 live under `decks/edh/`; MTG Arena Standard decks live under `decks/std/`.) The slug is the
 commander name (lowercase, spaces→hyphens, punctuation dropped), e.g.
 `.mtg/decks/edh/atraxa-praetors-voice/`. If the user already has a folder for that commander and wants a
@@ -93,8 +102,8 @@ The subdirectories:
 
 - **`.mtg/decks/`** — where built decks are written, **split by format**: Commander/EDH decks go
   under `.mtg/decks/edh/` and MTG Arena Standard decks under `.mtg/decks/std/`. **Each deck gets its
-  own subfolder** — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding that deck's two deliverable
-  files (`deck.md` and `import.txt`). Create the directories if they're missing.
+  own subfolder** — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding that deck's three deliverable
+  files (`import.txt`, `primer.md`, and `deck.md`). Create the directories if they're missing.
 - **`.mtg/collection/`** — where the user's **existing card collection** lives (the cards they
   already own), so decks can be built from — or biased toward — what they have. At the **start of a
   build, check whether `.mtg/collection/` exists and holds a collection file** (a Moxfield /
@@ -333,7 +342,7 @@ pieces of card advantage) as red flags to fix, not features.
 ## Budget and pricing
 
 - Price every non-basic card with its Scryfall `prices.eur` (Cardmarket, EUR). Basics are free. Sum for
-  the deck total and show it in the annotated file — for both the **reference base** and the **final** deck.
+  the deck total and show it in `deck.md` — for both the **reference base** and the **final** deck.
 - **Hit a budget cap by reducing the reference deck, not by starting cheap** (Step 8 / `methodology.md`):
   iterate the non-basics most-expensive-first and swap each for a **cheaper card serving the same
   role/synergy** (same function, color identity, comparable effect, ideally also in the comparable lists).
@@ -348,10 +357,10 @@ pieces of card advantage) as red flags to fix, not features.
 
 ## Quality bar before you hand it over
 
-**Reconcile the two files first.** Build the annotated list, then generate the import list *from it* —
-don't assemble them independently, or they drift (e.g. a card you cut for bracket reasons sneaks back into
-the import list). Before presenting, verify the import list sums to exactly 100 and contains the same
-cards as the annotated list. A one-line check works:
+**Reconcile the files first.** Lock the 100-card list, then build `import.txt` (with its role tags) and write
+`primer.md` and `deck.md` *from that same locked list* — don't assemble them independently, or they drift (e.g. a
+card you cut for bracket reasons sneaks back into one file). Before presenting, verify `import.txt` sums to exactly
+100 and that `primer.md`'s card lines match it. A one-line check works:
 `awk '{s+=$1} END{print s}' <import>.txt` must print `100`, and
 `sed 's/^[0-9]* //' <import>.txt | sort | uniq -d` must print nothing (no duplicate names; Commander is
 singleton). This catches the most common failure mode: a popular card you deliberately excluded (a Game
@@ -374,7 +383,7 @@ at the bracket and the per-dimension scorecard. Don't deliver a deck without it.
 ## Final step — always commit & push (every build ends here)
 
 This is the step that gets missed, so treat it as part of the deliverable, not an afterthought.
-**After the two files are written and presented, the last thing you do — every single time — is push
+**After the three files are written and presented, the last thing you do — every single time — is push
 them** by invoking the **mtg-sync** skill: `--push -m "<commander / archetype>"`.
 
 Run it **unconditionally**. Do *not* first reason about whether the workspace is a synced repo — just

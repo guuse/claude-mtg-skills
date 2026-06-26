@@ -71,12 +71,14 @@ Pick the handful that describe *this* deck. Examples by archetype:
 
 If you coin a new theme tag, define it in one line in the primer's tag legend so the reader knows what it means.
 
-## How tags appear in `moxfield-import.txt`
+## How tags appear in `import.txt`
 
-Each line carries **one or more** tags. Each tag is written `#` immediately followed by its name (prefix
-included); **Moxfield ends a tag at the next `#`**, so multi-word, space-containing tags need **no quoting** —
-just separate tags with a space: `#3) Ninjutsu - Targets`. Use **deck-specific** tags (`#…`), not global ones
-(`#!…`). **The commander line (first) carries no tag:**
+The tags live **on the deck's `import.txt`** — that one file is both the importable list and the Moxfield tag
+source (there is no separate `moxfield-import.txt`). Each non-commander line carries **one or more** tags. Each
+tag is written `#` immediately followed by its name (prefix included); **Moxfield ends a tag at the next `#`**,
+so multi-word, space-containing tags need **no quoting** — just separate tags with a space: `#3) Ninjutsu -
+Targets`. Use **deck-specific** tags (`#…`), not global ones (`#!…`). **The commander line (first) carries no
+tag:**
 
 ```
 1 Satoru Umezawa
@@ -87,14 +89,21 @@ just separate tags with a space: `#3) Ninjutsu - Targets`. Use **deck-specific**
 10 Island #E) Lands
 ```
 
-Order the tags on each line in tier order (`1)…2)…` then `A)…B)…`) so the file reads consistently. Build it
-from the deck's `import.txt` (commander first, blank line, then the 99) — keep each card **name and its exact
-`(SET) collector#` printing** byte-for-byte identical, only appending the trailing ` #…` tags. (See
-https://moxfield.com/help/adding-cards — line format `<qty> <name> (SET) *F* *A* <#> #tag #!globaltag`.)
+Order the tags on each line in tier order (`1)…2)…` then `A)…B)…`) so the file reads consistently. Append them
+to the deck's existing card lines (commander first, blank line, then the 99) — keep each card **name and its
+exact `(SET) collector#` printing** (if present) byte-for-byte identical, only adding the trailing ` #…` tags.
+(See https://moxfield.com/help/adding-cards — line format `<qty> <name> (SET) *F* *A* <#> #tag #!globaltag`.)
 
 **Applying the tags — Bulk Edit, not Import.** Moxfield's **Import / netdeck** screen *ignores* `#Tags`, so
-pasting `moxfield-import.txt` there gets you the cards with **no** tags. To apply them, open the deck →
-**More → Bulk Edit** and paste `moxfield-import.txt` into the Bulk Edit box (or build the deck first via
+pasting `import.txt` there gets you the cards with **no** tags. To apply them, open the deck →
+**More → Bulk Edit** and paste `import.txt` into the Bulk Edit box (or build the deck first via
 Import, then re-paste the tagged list into Bulk Edit). Then **group by Tag** to see the deck in deliberate
 order — the numbered engine groups first, then the lettered support pillars. Tell the user this in the primer's
 Moxfield usage note.
+
+## Card links in `primer.md`
+
+In `primer.md`, write every card name as a **Moxfield card link** — `[[Card Name]]` (double square brackets,
+exact card name). Moxfield renders these as hover-preview links when the primer is pasted into a deck's
+Notes/Primer tab. Link the **commander** too (e.g. `[[Meren of Clan Nel Toth]]`). Use the card's full name; for
+double-faced cards the front-face name is enough (`[[Bala Ged Recovery]]`).

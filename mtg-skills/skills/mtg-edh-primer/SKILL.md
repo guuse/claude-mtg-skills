@@ -12,9 +12,9 @@ description: >-
   deck's win conditions and theme, classifies every card into role + theme tags (mana dork, sac outlet,
   fatty, draw, drain, recursion, removal, finisher, land, …), explains each card in one tight line in the
   context of the deck, writes an early/mid/late play guide with a mulligan note and common-misplays
-  callout, and awards a ★ rating shown beside the deck's power Bracket. Outputs two files —
-  `primer.md` (the publish-ready primer) and `moxfield-import.txt` (the tagged import) — and never
-  touches the deck's `deck.md`/`import.txt`. For Commander/EDH; explains a deck rather than building
+  callout, and awards a ★ rating shown beside the deck's power Bracket. Outputs
+  `primer.md` (the publish-ready primer, linking cards with `[[Card Name]]`) and a role-tagged `import.txt`
+  (the deck list with each card's Moxfield tags appended) — and never touches the private `deck.md`. For Commander/EDH; explains a deck rather than building
   (`mtg-edh-build`), swapping cards (`mtg-edh-upgrade`), or only scoring it (`mtg-edh-analyze`).
 ---
 
@@ -146,8 +146,11 @@ not the full report `mtg-edh-analyze` would write.
 
 ## The deliverables
 
-Write two files into `.mtg/decks/edh/<slug>/`, and **never modify `deck.md` or `import.txt`** (those are
-build/upgrade's status + plain-list outputs):
+Write `primer.md` and a role-tagged `import.txt` into `.mtg/decks/edh/<slug>/`. **Leave `deck.md` untouched**
+(that's build/upgrade's *private* status notes). You **do** (re)write `import.txt` — appending each
+non-commander card's role tags — but keep every card's name (and `(SET) collector#` printing, if present)
+byte-for-byte identical; only add the trailing ` #…` tags. (There is no separate `moxfield-import.txt` — the
+tagged `import.txt` is both the importable list and the Moxfield tag source.)
 
 1. **`primer.md`** — the publish-ready primer, in this order:
    - **Header:** deck name + commander; the **`Rating: ★★★★☆ (4/5) — strong Bracket 3`** headline + the
@@ -159,19 +162,19 @@ build/upgrade's status + plain-list outputs):
    - **How it wins** — the named win conditions (Step 1).
    - **Card roles & tags** — a one-line legend naming the deck's **numbered engine tiers** and the lettered
      support pillars, then cards grouped by their most-defining tag with one-line explanations (Step 3). State
-     that the **same tags (one or more per card)** are in `moxfield-import.txt`, and that **the tags only take
+     that the **same tags (one or more per card)** are in `import.txt`, and that **the tags only take
      effect via Moxfield's Bulk Edit — not the Import/netdeck screen** (see below); once applied, group by Tag
      in Moxfield to read the deck in deliberate order.
    - **Play guide** — mulligan, early/mid/late, common misplays (Step 4).
    - **Strengths & weaknesses** — and how to play around the weaknesses.
    It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab. **Every card name is a
    `[[Card Name]]` link** (Step 3), so the published primer shows a hover preview of each card.
-2. **`moxfield-import.txt`** — the 100-card list where each non-commander card carries **one or more**
+2. **`import.txt` (role-tagged)** — the 100-card list where each non-commander card carries **one or more**
    deck-defining tags (see `references/tags.md`): a **numbered engine** (`1) … 2) …`, deck-flavoured, in
    execution order) plus the **lettered support pillars** (`A) … E) Lands`), each tag written `#…` (no
-   quoting — Moxfield ends a tag at the next `#`) and ordered by tier on the line. Built from `import.txt` so
-   each card line — name **and** its exact
-   `(SET) collector#` printing — stays byte-for-byte identical (only the trailing `#…` tags are appended).
+   quoting — Moxfield ends a tag at the next `#`) and ordered by tier on the line. Append the tags to the deck's
+   existing card lines so each line — name **and** its exact
+   `(SET) collector#` printing (if present) — stays byte-for-byte identical (only the trailing `#…` tags are added).
    **The commander comes first and carries no tag** (Moxfield labels it in its own zone), then a blank line,
    then the 99. Include a short usage note in `primer.md` explaining that Moxfield's **Import/netdeck screen
    ignores the `#Tags`** — paste this file into Moxfield's **Bulk Edit** box instead to apply them.
@@ -186,12 +189,12 @@ Use the file-presentation tool to share both once written.
   backtick code block), so each renders as a hover-preview card; backticks are reserved for mana costs, the
   basic-land summary, and literal snippets.
 - **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; **every
-  non-commander card in `moxfield-import.txt` carries one or more fitting tags (numbered engine + lettered
+  non-commander card in `import.txt` carries one or more fitting tags (numbered engine + lettered
   pillars, written `#…` unquoted), the commander line carries none**, and each line (name + `(SET) collector#`
   printing) matches `import.txt` exactly (it still sums to 100). The Bulk-Edit-not-Import workflow is stated in
   the primer.
 - **Honest rating:** the primer opens with the rating — a one-line headline, the compact per-dimension
   scorecard with the numbers behind each score, and the biggest-gaps + cheapest-fixes line — scored against the
   rubric at the stated bracket, with the ★≠bracket rule shown and mis-bracketing called out.
-- **Non-destructive:** `deck.md` and `import.txt` are untouched; only `primer.md` and `moxfield-import.txt` are
-  written.
+- **Scoped:** `deck.md` (private notes) is untouched; the skill writes `primer.md` and the role-tagged
+  `import.txt` (tags appended to the existing card lines, card list unchanged).

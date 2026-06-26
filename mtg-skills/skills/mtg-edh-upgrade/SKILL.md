@@ -80,28 +80,34 @@ Two parameters, same as the builder — confirm them up front unless the user al
 
 ## The deliverable
 
-Always produce **two files**, saved in their own folder under `.mtg/decks/edh/` in the user's current working
-directory: `.mtg/decks/edh/<deck-slug>/deck.md` and `.mtg/decks/edh/<deck-slug>/import.txt` (create the folder if
+Always produce **three files**, saved in their own folder under `.mtg/decks/edh/` in the user's current working
+directory: `.mtg/decks/edh/<deck-slug>/import.txt`, `.mtg/decks/edh/<deck-slug>/primer.md`, and
+`.mtg/decks/edh/<deck-slug>/deck.md` (create the folder if
 missing; slug = the commander name, kebab-case, with a suffix like `-upgraded` if a folder already exists).
 (Commander/EDH decks live under `decks/edh/`; MTG Arena Standard decks live under `decks/std/`.)
 See "The `.mtg` workspace" below.
 
-1. **An annotated, upgraded decklist** (`deck.md`) — the full improved 100, cards grouped by role
-   (Commander, Lands, Ramp, Card Advantage, Interaction, Synergy/Themed, Win Conditions), each line showing
-   card name, mana value, a one-line reason, and Cardmarket EUR price. Include category counts, total deck
-   value. **Open with a "Changes" section** that is the heart of an upgrade: each change as **— Cut `<card>`
-   (€X) → Add `<card>` (€Y) (shared role/reason)**, grouped by the weakness it fixes, plus the **total upgrade
-   spend vs the budget cap** and a short "what these changes do" paragraph. Include an **Actual bracket**
-   line — the bracket the upgraded deck *actually is* by `references/brackets.md` (with Game Changer count and
-   combo/MLD/extra-turn confirmation), stated against the target if they differ, plus a **"what's needed to go
-   up one bracket" (and what would drop it)** note. Close with a **Deck Rating** section — an overall ★ rating
-   at the actual bracket plus the per-dimension scorecard, **before vs. after** so the user sees how much the
-   upgrade moved the needle (see "Step 6 — Rank the upgraded deck").
-2. **A plain importable list** (`import.txt`) — the upgraded 100 as `1 Card Name`, commander on its own
-   first line, ready to paste into Moxfield / Archidekt / mtggoldfish. Generate it *from* the upgraded
-   annotated list so they can't drift.
+1. **The importable, role-tagged list** (`import.txt`) — the upgraded 100 as `1 Card Name`, commander first on
+   its own line **with no tag**, blank line, then the 99, each non-commander card carrying its **two-tier role
+   tags** (deck-flavoured numbered engine `#1) …` then lettered pillars `#A) … #E) Lands`, `#…` unquoted,
+   tier-ordered) per `../mtg-edh-primer/references/tags.md`. This single file is both the import **and** the
+   Moxfield tag source — no separate plain/tagged files. Generate it *from* the locked upgraded list so nothing
+   drifts. (Moxfield's Import screen ignores `#tags`; apply them via **More → Bulk Edit** — say so in `primer.md`.)
+2. **The publish-ready primer** (`primer.md`) — **always created** (public, Moxfield-pasteable): header + rating
+   headline, TL;DR, how it wins, **card roles & tags** (the numbered-engine/lettered-pillar legend, then cards
+   grouped by their most-defining tag with one-line explanations), play guide, strengths/weaknesses. **Link every
+   card with Moxfield's `[[Card Name]]` syntax** (commander included). Follow `../mtg-edh-primer/SKILL.md`.
+3. **Private status notes** (`deck.md`) — **private** working notes, *not* the public write-up. **Open with the
+   "Changes" section** that is the heart of an upgrade: each change as **— Cut `<card>` (€X) → Add `<card>` (€Y)
+   (shared role/reason)**, grouped by the weakness it fixes, plus the **total upgrade spend vs the budget cap**
+   and a short "what these changes do" paragraph. Include an **Actual bracket** line — the bracket the upgraded
+   deck *actually is* by `references/brackets.md` (with Game Changer count and combo/MLD/extra-turn confirmation),
+   stated against the target if they differ, plus a **"what's needed to go up one bracket" (and what would drop
+   it)** note. Close with a **Deck Rating** section — an overall ★ rating at the actual bracket plus the
+   per-dimension scorecard, **before vs. after** (see "Step 6 — Rank the upgraded deck"). Keep per-card role
+   explanations in `primer.md`, not here.
 
-Use the `present_files` tool to share both — but **only at the end**, once the user has agreed to the
+Use the `present_files` tool to share all three — but **only at the end**, once the user has agreed to the
 changes through the interactive method below. The files are the record of a conversation, not its opening
 move.
 
@@ -128,8 +134,8 @@ The subdirectory:
 
 - **`.mtg/decks/`** — where upgraded decks are written, **split by format**: Commander/EDH under
   `.mtg/decks/edh/` and MTG Arena Standard under `.mtg/decks/std/`. **Each deck gets its own subfolder**
-  — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding `deck.md` and `import.txt`. This is the same
-  decks folder the other deckbuilding skills use. Create the directories if they're missing.
+  — for this skill, `.mtg/decks/edh/<deck-slug>/`, holding `import.txt`, `primer.md`, and `deck.md`. This is the
+  same decks folder the other deckbuilding skills use. Create the directories if they're missing.
 
 (The pasted decklist is taken from the prompt, not a file — there's no input file to read.)
 
@@ -217,7 +223,7 @@ priority (e.g. "first, the mana base", then "card advantage"), each as **Cut →
 running spend. Invite them to veto, ask why, suggest their own cards, or push for cheaper/spicier options,
 and **adjust accordingly**. Where there's a real choice, offer 2–3 options rather than dictating one. Keep
 going until the user is happy with the full set of changes. **Only then** assemble the final 100, run the
-quality checks below, rank the deck (Step 6), and write the two files.
+quality checks below, rank the deck (Step 6), and write the three files.
 
 ### Step 6 — Rank the upgraded deck (★ rating)
 Before writing files, **rate the final list** and embed the result in `deck.md`. Run
@@ -269,9 +275,10 @@ first.
 
 ## Quality bar before you hand it over
 
-- **Reconcile the files and the changelog.** Generate `import.txt` from the upgraded annotated list. Verify
-  it sums to exactly **100** with no duplicate non-basic names (`awk '{s+=$1} END{print s}' import.txt`
-  prints `100`; `sed 's/^[0-9]* //' import.txt | sort | uniq -d` prints nothing). The **Changes** section's
+- **Reconcile the files and the changelog.** Build `import.txt` (with role tags) from the locked upgraded list,
+  and write `primer.md` and `deck.md` from that same list. Verify `import.txt`
+  sums to exactly **100** with no duplicate non-basic names (`awk '{s+=$1} END{print s}' import.txt`
+  prints `100`; `sed 's/^[0-9]* //;s/ #.*//' import.txt | sort | uniq -d` prints nothing). The **Changes** section's
   cuts and adds must net to zero card-count change, and every added card must appear in the final list and
   every cut must be gone.
 - **Within budget & bracket:** total upgrade spend ≤ the cap (or the user okayed an overage, or the honest
@@ -289,7 +296,7 @@ first.
 ## Final step — always commit & push (every upgrade ends here)
 
 This is the step that gets missed, so treat it as part of the deliverable, not an afterthought.
-**After the two files are written and presented, the last thing you do — every single time — is push
+**After the three files are written and presented, the last thing you do — every single time — is push
 them** by invoking the **mtg-sync** skill: `--push -m "<commander / archetype>"`.
 
 Run it **unconditionally**. Do *not* first reason about whether the workspace is a synced repo — just

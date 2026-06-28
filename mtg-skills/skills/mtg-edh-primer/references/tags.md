@@ -77,8 +77,10 @@ The tags live **on the deck's `import.txt`** — that one file is both the impor
 source (there is no separate `moxfield-import.txt`). Each non-commander line carries **one or more** tags. Each
 tag is written `#` immediately followed by its name (prefix included); **Moxfield ends a tag at the next `#`**,
 so multi-word, space-containing tags need **no quoting** — just separate tags with a space: `#3) Ninjutsu -
-Targets`. Use **deck-specific** tags (`#…`), not global ones (`#!…`). **The commander line (first) carries no
-tag:**
+Targets`. Use **deck-specific** tags (`#…`), not global ones (`#!…`). **Never use the `&` character in a tag
+name — Moxfield does not allow it.** Write the word `and`, or rephrase: `#Sac and Drain` or `#SacDrain`, never
+`#Sac & Drain`. This applies to **every** tag — engine tiers, support pillars, and coined theme tags alike.
+**The commander line (first) carries no tag:**
 
 ```
 1 Satoru Umezawa
@@ -98,8 +100,9 @@ exact `(SET) collector#` printing** (if present) byte-for-byte identical, only a
 pasting `import.txt` there gets you the cards with **no** tags. To apply them, open the deck →
 **More → Bulk Edit** and paste `import.txt` into the Bulk Edit box (or build the deck first via
 Import, then re-paste the tagged list into Bulk Edit). Then **group by Tag** to see the deck in deliberate
-order — the numbered engine groups first, then the lettered support pillars. Tell the user this in the primer's
-Moxfield usage note.
+order — the numbered engine groups first, then the lettered support pillars. This is background for *how the
+tagged `import.txt` is meant to be used* — **do not** reproduce it as a usage note/box in `primer.md`; the
+primer is the deck guide only.
 
 ## Card links in `primer.md`
 

@@ -167,10 +167,9 @@ tagged `import.txt` is both the importable list and the Moxfield tag source.)
    - **TL;DR** — 2–3 sentences: archetype, how it plays, how it wins.
    - **How it wins** — the named win conditions (Step 1).
    - **Card roles & tags** — a one-line legend naming the deck's **numbered engine tiers** and the lettered
-     support pillars, then cards grouped by their most-defining tag with one-line explanations (Step 3). State
-     that the **same tags (one or more per card)** are in `import.txt`, and that **the tags only take
-     effect via Moxfield's Bulk Edit — not the Import/netdeck screen** (see below); once applied, group by Tag
-     in Moxfield to read the deck in deliberate order.
+     support pillars, then cards grouped by their most-defining tag with one-line explanations (Step 3). The
+     **same tags (one or more per card)** are in `import.txt`, grouped by tier so the deck reads in
+     deliberate order.
    - **Play guide** — mulligan, early/mid/late, common misplays (Step 4).
    - **Strengths & weaknesses** — and how to play around the weaknesses.
    It's plain Markdown that pastes straight into Moxfield's Notes/Primer tab. **Every card name is a
@@ -182,8 +181,11 @@ tagged `import.txt` is both the importable list and the Moxfield tag source.)
    existing card lines so each line — name **and** its exact
    `(SET) collector#` printing (if present) — stays byte-for-byte identical (only the trailing `#…` tags are added).
    **The commander comes first and carries no tag** (Moxfield labels it in its own zone), then a blank line,
-   then the 99. Include a short usage note in `primer.md` explaining that Moxfield's **Import/netdeck screen
-   ignores the `#Tags`** — paste this file into Moxfield's **Bulk Edit** box instead to apply them.
+   then the 99.
+
+Do **not** add a Moxfield how-to / "Using these files in Moxfield" usage box to `primer.md` — the primer is
+just the deck guide (rating, win conditions, card roles, play guide). Skip import/Bulk-Edit/command-zone
+instructions entirely.
 
 Use the file-presentation tool to share both once written.
 
@@ -197,8 +199,9 @@ Use the file-presentation tool to share both once written.
 - **Complete & tagged:** every nonland card + notable land has a line; basics are summarised; **every
   non-commander card in `import.txt` carries one or more fitting tags (numbered engine + lettered
   pillars, written `#…` unquoted), the commander line carries none**, and each line (name + `(SET) collector#`
-  printing) matches `import.txt` exactly (it still sums to 100). The Bulk-Edit-not-Import workflow is stated in
-  the primer.
+  printing) matches `import.txt` exactly (it still sums to 100).
+- **No Moxfield how-to box:** `primer.md` contains no "Using these files in Moxfield" / import / Bulk-Edit /
+  command-zone usage instructions — it's the deck guide only.
 - **Honest rating:** the primer opens with the rating — a one-line headline, the compact per-dimension
   scorecard with the numbers behind each score, and the biggest-gaps + cheapest-fixes line — scored against the
   rubric at the stated bracket, with the ★≠bracket rule shown and mis-bracketing called out.

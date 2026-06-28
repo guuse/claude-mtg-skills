@@ -79,6 +79,30 @@ commander name (lowercase, spaces→hyphens, punctuation dropped), e.g.
 different build, add a short distinguishing suffix (e.g. `atraxa-praetors-voice-superfriends`) so
 existing decks aren't overwritten. See "The `.mtg` workspace" below.
 
+## Budget variants (only when asked)
+
+The three files above are the default — **one deck**. Produce a **budget-variant ladder** *only* when the
+user asks for one: multiple price points, a budget ladder, or a transition (e.g. "what can I get at €0 / €25 /
+€100", or moving an owned deck to a new commander at several spend levels). Never emit variants unasked.
+
+When you do, the deck folder holds one set of files **per variant**, labelled by the variant's € budget (or a
+name like `cedh`). The cheapest version — usually just what the user already owns — is the **`base`** variant.
+
+- **`import-<label>.txt`** — that variant's 100, **role-tagged** exactly as above (commander first, no tag).
+- **`primer-<label>.md`** — that variant's public primer (`[[Card Name]]` links), cross-linking the other variants.
+- **`buylist-<label>.txt`** — the cards to **buy** for that variant from the user's collection, priced. It's the
+  **price floor** (cheapest copy each) — say so, since a real single-seller/optimised cart costs more once
+  shipping is counted. The `base` variant is ~free, so it needs **no** buylist.
+- **`cuts-<from>-<to>.md`** — one per **consecutive step** (e.g. `cuts-base-25.md`, `cuts-25-100.md`): the
+  incremental **cut `<card>` (€X) → add `<card>` (€Y)** list with the shared role, a spend-ladder table, and a
+  short "what this step does / doesn't do" note.
+- **`deck.md`** — **one shared** private status doc for the whole ladder (not one per variant).
+
+The **recommended** variant (best value — name it in `deck.md`) **may** drop its label and use the plain
+`import.txt` / `primer.md` as an alias. An intermediate price point that doesn't warrant a full file set can
+instead live as a **section** in the nearest variant's primer plus a footer in its buylist. The term is
+**budget variant** (never "tier" — that already means bracket / Standard wildcard tier; see `CONTEXT.md`).
+
 ## The `.mtg` workspace
 
 All of this skill's file I/O lives in one **workspace** directory holding three subfolders —

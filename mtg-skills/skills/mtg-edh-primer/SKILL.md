@@ -152,6 +152,12 @@ non-commander card's role tags — but keep every card's name (and `(SET) collec
 byte-for-byte identical; only add the trailing ` #…` tags. (There is no separate `moxfield-import.txt` — the
 tagged `import.txt` is both the importable list and the Moxfield tag source.)
 
+> **Budget variants:** if the deck is one of several **budget variants** of the same deck (a labelled ladder —
+> see `mtg-edh-build`'s "Budget variants" section),
+> name this variant's outputs `primer-<label>.md` and `import-<label>.txt` (label = the variant's € budget, or
+> `base`), and cross-link the sibling variants from the primer. The shared private `deck.md` is still left
+> untouched. Never invent variants the user didn't ask for.
+
 1. **`primer.md`** — the publish-ready primer, in this order:
    - **Header:** deck name + commander; the **`Rating: ★★★★☆ (4/5) — strong Bracket 3`** headline + the
      ★≠bracket note; colors; total value.

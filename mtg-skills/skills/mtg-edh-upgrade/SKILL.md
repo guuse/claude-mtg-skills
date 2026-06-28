@@ -120,8 +120,9 @@ me"), or a transition that ladders. Never emit variants unasked.
 When you do, follow the **same layout as `mtg-edh-build`** (see its "Budget variants" section): the identity
 folder `<slug>/` holds **one subfolder per variant**, each a self-contained deck folder — `<slug>/<label>/`
 with its own `import.txt` (role-tagged), `primer.md` (public, `[[Card Name]]` links, cross-linking siblings),
-`deck.md` (that variant's private status — **one per variant**, not shared), and `buylist.txt` (price-floor,
-with the floor-vs-delivered caveat). The user's current list is the **`base/`** variant (no buylist); an
+`deck.md` (that variant's private status — **one per variant**, not shared), and `buylist.txt` (a **raw,
+Cardmarket-paste-ready** `<qty> <Card Name>` list — prices, totals, and the price-floor caveat go in that
+variant's `deck.md`, not in the buylist). The user's current list is the **`base/`** variant (no buylist); an
 optional `cuts-from-<prev>.md` per step documents the incremental cut→add list; and a single `<slug>/README.md`
 at the root indexes the ladder and names the recommended variant. **No suffixed filenames, no shared root
 deck.md, no plain-`import.txt` alias** — every list lives in a labelled subfolder. The term is

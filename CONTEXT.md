@@ -55,9 +55,11 @@ self-contained subfolder** under the deck's identity folder (`<slug>/<label>/`),
 and from Standard's **wildcard tier** (a 1–5 wildcard-budget cap). _Avoid_: "tier" (it
 already means bracket / wildcard tier — say *budget variant*).
 
-**Buylist**:
-The list of cards the owner still needs to **buy** to assemble a deck (or a budget
-variant) from what they already own, with prices. It is the **price floor** (cheapest
-copy of each card), not a placed order — a real single-seller/optimised cart costs more
-once shipping and per-seller pricing are counted. Distinct from the deck's full card list
-and from `deck.md`. _Avoid_: cart, order.
+**Buylist** (`buylist.txt`):
+A **raw, copy-paste-ready** list of the cards the owner still needs to **buy** to assemble a
+deck (or a budget variant) from what they already own — one `<qty> <Card Name>` per line and
+**nothing else** (no prices, headers, or notes), so it pastes straight into Cardmarket's wants
+import. The **priced breakdown, totals, and per-card reasoning** live in the variant's `deck.md`,
+where the **price-floor** caveat is noted (cheapest copy of each card — a real single-seller/
+optimised cart costs more once shipping and per-seller pricing are counted). Distinct from the
+deck's full card list and from `deck.md`. _Avoid_: cart, order.

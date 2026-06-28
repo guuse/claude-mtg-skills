@@ -97,9 +97,11 @@ filename, is what distinguishes variants — e.g. `meren-clan-nel-toth/base/impo
 - **`<slug>/<label>/primer.md`** — that variant's public primer (`[[Card Name]]` links), cross-linking the sibling variants.
 - **`<slug>/<label>/deck.md`** — that variant's **private** status notes (its price, owned-vs-needed, actual
   bracket, and Deck Rating). **One per variant** — there is no shared ladder-wide `deck.md`.
-- **`<slug>/<label>/buylist.txt`** — the cards to **buy** for that variant from the user's collection, priced.
-  It's the **price floor** (cheapest copy each) — say so, since a real single-seller/optimised cart costs more
-  once shipping is counted. The `base` variant is ~free, so it needs **no** buylist.
+- **`<slug>/<label>/buylist.txt`** — the cards to **buy** for that variant, as a **raw, Cardmarket-paste-ready
+  list**: one `<qty> <Card Name>` per line and **nothing else** (no prices, headers, or notes), so it pastes
+  straight into Cardmarket's wants import. Put the **priced breakdown, totals, and the price-floor caveat**
+  (cheapest copy each — a real single-seller/optimised cart costs more once shipping is counted) in this
+  variant's `deck.md`, not in the buylist. The `base` variant is ~free, so it needs **no** buylist.
 - **`<slug>/<label>/cuts-from-<prev>.md`** *(optional)* — the incremental **cut `<card>` (€X) → add `<card>`
   (€Y)** list for the step *into* this variant from the next-cheaper one, with the shared role and a short
   "what this step does / doesn't do" note. The `base` variant has none.
@@ -109,8 +111,8 @@ filename, is what distinguishes variants — e.g. `meren-clan-nel-toth/base/impo
 
 Because each variant is a self-contained deck folder, the other skills (primer / upgrade / analyze) target a
 **specific variant** at `.mtg/decks/edh/<slug>/<label>/`. An intermediate price point that doesn't warrant its
-own folder can instead live as a documented **section** inside the nearest variant's primer (plus a footer in
-its buylist) rather than a new subfolder. The term is **budget variant** (never "tier" — that already means
+own folder can instead live as a documented **section** inside the nearest variant's primer (plus its priced
+adds in that variant's `deck.md`) rather than a new subfolder. The term is **budget variant** (never "tier" — that already means
 bracket / Standard wildcard tier; see `CONTEXT.md`).
 
 ## The `.mtg` workspace

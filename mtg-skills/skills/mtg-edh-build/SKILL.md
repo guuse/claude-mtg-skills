@@ -85,23 +85,33 @@ The three files above are the default — **one deck**. Produce a **budget-varia
 user asks for one: multiple price points, a budget ladder, or a transition (e.g. "what can I get at €0 / €25 /
 €100", or moving an owned deck to a new commander at several spend levels). Never emit variants unasked.
 
-When you do, the deck folder holds one set of files **per variant**, labelled by the variant's € budget (or a
-name like `cedh`). The cheapest version — usually just what the user already owns — is the **`base`** variant.
+When you do, the deck's identity folder `<slug>/` holds **one subfolder per budget variant** — each a
+**self-contained deck folder** carrying the same three files as a single deck (`import.txt`, `primer.md`,
+`deck.md`) plus that variant's `buylist.txt`. Name each subfolder by its € budget (or a short name like
+`cedh`); the cheapest/owned variant is **`base/`**. **Never suffix the filenames and never leave a deck at the
+identity-folder root** — every list lives one level down, in a labelled variant folder. (So a folder, not a
+filename, is what distinguishes variants — e.g. `meren-clan-nel-toth/base/import.txt`,
+`meren-clan-nel-toth/25/import.txt`, `meren-clan-nel-toth/100/import.txt`.)
 
-- **`import-<label>.txt`** — that variant's 100, **role-tagged** exactly as above (commander first, no tag).
-- **`primer-<label>.md`** — that variant's public primer (`[[Card Name]]` links), cross-linking the other variants.
-- **`buylist-<label>.txt`** — the cards to **buy** for that variant from the user's collection, priced. It's the
-  **price floor** (cheapest copy each) — say so, since a real single-seller/optimised cart costs more once
-  shipping is counted. The `base` variant is ~free, so it needs **no** buylist.
-- **`cuts-<from>-<to>.md`** — one per **consecutive step** (e.g. `cuts-base-25.md`, `cuts-25-100.md`): the
-  incremental **cut `<card>` (€X) → add `<card>` (€Y)** list with the shared role, a spend-ladder table, and a
-  short "what this step does / doesn't do" note.
-- **`deck.md`** — **one shared** private status doc for the whole ladder (not one per variant).
+- **`<slug>/<label>/import.txt`** — that variant's 100, **role-tagged** exactly as above (commander first, no tag).
+- **`<slug>/<label>/primer.md`** — that variant's public primer (`[[Card Name]]` links), cross-linking the sibling variants.
+- **`<slug>/<label>/deck.md`** — that variant's **private** status notes (its price, owned-vs-needed, actual
+  bracket, and Deck Rating). **One per variant** — there is no shared ladder-wide `deck.md`.
+- **`<slug>/<label>/buylist.txt`** — the cards to **buy** for that variant from the user's collection, priced.
+  It's the **price floor** (cheapest copy each) — say so, since a real single-seller/optimised cart costs more
+  once shipping is counted. The `base` variant is ~free, so it needs **no** buylist.
+- **`<slug>/<label>/cuts-from-<prev>.md`** *(optional)* — the incremental **cut `<card>` (€X) → add `<card>`
+  (€Y)** list for the step *into* this variant from the next-cheaper one, with the shared role and a short
+  "what this step does / doesn't do" note. The `base` variant has none.
+- **`<slug>/README.md`** — the **ladder index**, and the *only* file at the identity-folder root: a
+  budget-variants-at-a-glance table (label · spend · actual bracket · Game Changers · one-line note), a pointer
+  to the **recommended** variant, and links to each variant's folder.
 
-The **recommended** variant (best value — name it in `deck.md`) **may** drop its label and use the plain
-`import.txt` / `primer.md` as an alias. An intermediate price point that doesn't warrant a full file set can
-instead live as a **section** in the nearest variant's primer plus a footer in its buylist. The term is
-**budget variant** (never "tier" — that already means bracket / Standard wildcard tier; see `CONTEXT.md`).
+Because each variant is a self-contained deck folder, the other skills (primer / upgrade / analyze) target a
+**specific variant** at `.mtg/decks/edh/<slug>/<label>/`. An intermediate price point that doesn't warrant its
+own folder can instead live as a documented **section** inside the nearest variant's primer (plus a footer in
+its buylist) rather than a new subfolder. The term is **budget variant** (never "tier" — that already means
+bracket / Standard wildcard tier; see `CONTEXT.md`).
 
 ## The `.mtg` workspace
 

@@ -153,10 +153,11 @@ byte-for-byte identical; only add the trailing ` #…` tags. (There is no separa
 tagged `import.txt` is both the importable list and the Moxfield tag source.)
 
 > **Budget variants:** if the deck is one of several **budget variants** of the same deck (a labelled ladder —
-> see `mtg-edh-build`'s "Budget variants" section),
-> name this variant's outputs `primer-<label>.md` and `import-<label>.txt` (label = the variant's € budget, or
-> `base`), and cross-link the sibling variants from the primer. The shared private `deck.md` is still left
-> untouched. Never invent variants the user didn't ask for.
+> see `mtg-edh-build`'s "Budget variants" section), each variant is its **own self-contained subfolder**
+> `<slug>/<label>/` (label = the variant's € budget, or `base`). Write this variant's `primer.md` and
+> `import.txt` **into that variant's subfolder** (plain names, not suffixed), cross-link the sibling variants
+> from the primer, and leave that variant's own `deck.md` untouched. Update the identity folder's `README.md`
+> ladder index if the variant set changed. Never invent variants the user didn't ask for.
 
 1. **`primer.md`** — the publish-ready primer, in this order:
    - **Header:** deck name + commander; the **`Rating: ★★★★☆ (4/5) — strong Bracket 3`** headline + the

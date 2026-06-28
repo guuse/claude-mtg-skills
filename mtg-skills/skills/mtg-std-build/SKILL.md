@@ -59,8 +59,13 @@ user's current working directory: `.mtg/decks/std/<deck-slug>/deck.md` and
 `.mtg/decks/std/<deck-slug>/arena.txt`. Create the folder if it doesn't exist. (MTG Arena Standard decks
 live under `decks/std/`; Commander/EDH decks live under `decks/edh/`.) The slug is a short
 kebab-case deck name (the centerpiece or archetype, e.g. `.mtg/decks/std/mono-red-aggro/` or
-`.mtg/decks/std/dimir-bounce/`); add a distinguishing suffix for variants so existing decks aren't
-overwritten. See "The `.mtg` workspace" below.
+`.mtg/decks/std/dimir-bounce/`). **Budget variants of the *same* deck** (e.g. a 0-wildcard build vs a
+rare-heavy upgrade, or a base/upgraded/final ladder of one archetype) go in **one identity folder with a
+subfolder per variant** — `<slug>/<label>/` holding that variant's `deck.md` + `arena.txt` (label by wildcard
+budget or a short name; the cheapest/owned build is `base/`), plus a `<slug>/README.md` ladder index naming the
+recommended variant. **Don't suffix filenames or spin up a parallel top-level slug for a price point.** A
+genuinely *different* deck (a different gameplan, not just a spend level — e.g. mono-black midrange vs
+lifedrain) keeps its own top-level slug. See "The `.mtg` workspace" below.
 
 ## The `.mtg` workspace
 

@@ -111,6 +111,20 @@ Use the `present_files` tool to share all three — but **only at the end**, onc
 changes through the interactive method below. The files are the record of a conversation, not its opening
 move.
 
+## Budget variants (only when asked)
+
+The three files above are the default — **one** upgraded deck. Produce a **budget-variant ladder** *only* when
+the user asks for one: an upgrade path at several spend levels (e.g. "what does €25 vs €100 of upgrades get
+me"), or a transition that ladders. Never emit variants unasked.
+
+When you do, follow the **same layout as `mtg-edh-build`** (see its "Budget variants" section): one set per
+variant labelled by € budget — `import-<label>.txt`
+(role-tagged), `primer-<label>.md` (public, `[[Card Name]]` links), `buylist-<label>.txt` (price-floor, with the
+floor-vs-delivered caveat) — with the user's current list as the **`base`** variant (no buylist), a
+`cuts-<from>-<to>.md` per consecutive step (the incremental cut→add list), and **one shared** private `deck.md`
+for the whole ladder. The recommended variant may use the plain `import.txt`/`primer.md` alias. The term is
+**budget variant**, never "tier" (see `CONTEXT.md`).
+
 ## The `.mtg` workspace
 
 All of this skill's file I/O lives in one **workspace** directory holding `database/`, `decks/`, and

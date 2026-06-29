@@ -188,6 +188,14 @@ Do **not** add a Moxfield how-to / "Using these files in Moxfield" usage box to 
 just the deck guide (rating, win conditions, card roles, play guide). Skip import/Bulk-Edit/command-zone
 instructions entirely.
 
+**Never put repo/upgrade context in `primer.md`.** The primer is the **public, publish-ready deck guide** —
+how the deck works and how to pilot it. Anything about the *building/upgrading process* or the *workspace* must
+**never** appear in it and belongs **only in the private `deck.md`**: swap/cut reasoning ("replaced X with Y
+because…"), upgrade history or diffs vs a previous list, budget math and price tracking, buylists, target-vs-actual
+bracket working notes, TODOs, sync/commit/version metadata, file paths, slugs, and any other build-time
+bookkeeping. If the source material (a pasted deck, a `deck.md`, an upgrade summary) contains such notes, **leave
+them out of the primer** — the reader gets the finished deck explained, not the story of how it was assembled.
+
 Use the file-presentation tool to share both once written.
 
 ## Quality bar
@@ -203,6 +211,10 @@ Use the file-presentation tool to share both once written.
   printing) matches `import.txt` exactly (it still sums to 100).
 - **No Moxfield how-to box:** `primer.md` contains no "Using these files in Moxfield" / import / Bulk-Edit /
   command-zone usage instructions — it's the deck guide only.
+- **No repo/upgrade context:** `primer.md` contains no build/upgrade process notes — no swap/cut reasoning,
+  upgrade history or diffs, budget math, price tracking, buylists, sync/commit/version metadata, file paths, or
+  slugs. All of that lives **only** in the private `deck.md`; the primer explains the finished deck, not how it
+  was assembled.
 - **Honest rating:** the primer opens with the rating — a one-line headline, the compact per-dimension
   scorecard with the numbers behind each score, and the biggest-gaps + cheapest-fixes line — scored against the
   rubric at the stated bracket, with the ★≠bracket rule shown and mis-bracketing called out.

@@ -243,11 +243,58 @@ def get_local_mtga_path():
     return None
 
 
+def _build_loc_map(cursor, tables):
+    """Return {loc_id: text} from whatever localization schema this MTGA DB uses.
+
+    Current MTGA files expose a per-language table `Localizations_enUS(LocId, Loc)`;
+    older files used a single `Localizations(Id, Text)` with a language/Format column.
+    We detect the shape from the schema instead of assuming one — the previous code
+    queried `Localizations.Id`/`Text` unconditionally, which throws on the current
+    schema and (being swallowed) silently mapped nothing, dropping every card in the
+    file. Returns {} only when no localization table is actually readable.
+    """
+    import sqlite3
+
+    def cols(table):
+        return {row[1] for row in cursor.execute(f"PRAGMA table_info({table})")}
+
+    # Prefer an explicit en-US table, then any other en-* variant, then the generic one.
+    candidates = [t for t in ("Localizations_enUS", "Localizations_enus") if t in tables]
+    candidates += sorted(t for t in tables
+                         if t.lower().startswith("localizations")
+                         and "en" in t.lower() and t not in candidates)
+    if "Localizations" in tables:
+        candidates.append("Localizations")
+
+    for table in candidates:
+        c = cols(table)
+        id_col = next((x for x in ("LocId", "Id", "locId", "id") if x in c), None)
+        text_col = next((x for x in ("Loc", "Text", "loc", "text", "Formatted") if x in c), None)
+        if not id_col or not text_col:
+            continue
+        # A generic Localizations table mixes languages; keep only en-* rows.
+        lang_col = next((x for x in ("Format", "Language", "Lang", "isoCode") if x in c), None)
+        query = f"SELECT {id_col}, {text_col} FROM {table}"
+        if lang_col:
+            query += f" WHERE {lang_col} LIKE '%en%' OR {lang_col} IS NULL"
+        loc_map = {}
+        try:
+            for lid, text in cursor.execute(query):
+                if text and lid not in loc_map:
+                    loc_map[lid] = text
+        except sqlite3.Error:
+            continue
+        if loc_map:
+            return loc_map
+    return {}
+
+
 def load_local_mtga_database():
     """Scan MTGA's own bundled SQLite files for grpId -> {name, set, collector_number}.
 
     Best-effort supplement only: fills in arena_ids the Scryfall DB doesn't yet know
-    (e.g. cards from a set newer than the local database). No network, no download.
+    (e.g. cards from a set newer than the local database, or ones Scryfall hasn't
+    assigned arena_ids to yet). No network, no download.
     """
     import sqlite3
     raw_path = get_local_mtga_path()
@@ -266,44 +313,43 @@ def load_local_mtga_database():
                 cursor = conn.cursor()
                 tables = {row[0] for row in cursor.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'")}
-                if "Cards" in tables and "Localizations" in tables:
-                    loc_map = {}
-                    try:
-                        cursor.execute(
-                            "SELECT Id, Text FROM Localizations "
-                            "WHERE Format LIKE '%en-US%' OR Format IS NULL")
-                        for lid, text in cursor.fetchall():
-                            if text:
-                                loc_map[lid] = text
-                    except sqlite3.Error:
-                        cursor.execute("SELECT Id, Text FROM Localizations")
-                        for lid, text in cursor.fetchall():
-                            if text:
-                                loc_map[lid] = text
+                if "Cards" not in tables:
+                    conn.close()
+                    continue
+                loc_map = _build_loc_map(cursor, tables)
+                if not loc_map:
+                    log(f"  ({f.name}: no readable localization table — skipped)")
+                    conn.close()
+                    continue
 
-                    cols = [row[1] for row in cursor.execute("PRAGMA table_info(Cards)")]
-                    has_set = "ExpansionCode" in cols
-                    has_cn = "CollectorNumber" in cols
-                    query = (f"SELECT GrpId, TitleId, "
-                             f"{'ExpansionCode' if has_set else 'NULL'}, "
-                             f"{'CollectorNumber' if has_cn else 'NULL'} FROM Cards")
-                    for row in cursor.execute(query):
-                        grp_id, title_id, set_code, cn = row
-                        if title_id in loc_map:
-                            lookup[grp_id] = {
-                                "name": loc_map[title_id],
-                                "set": (set_code or "").upper(),
-                                "collector_number": str(cn) if cn else "",
-                            }
-                    if len(lookup) > 1000:
-                        conn.close()
-                        log(f"  Loaded {len(lookup)} cards from local MTGA files.")
-                        return lookup
+                cols = [row[1] for row in cursor.execute("PRAGMA table_info(Cards)")]
+                if "GrpId" not in cols or "TitleId" not in cols:
+                    conn.close()
+                    continue
+                has_set = "ExpansionCode" in cols
+                has_cn = "CollectorNumber" in cols
+                query = (f"SELECT GrpId, TitleId, "
+                         f"{'ExpansionCode' if has_set else 'NULL'}, "
+                         f"{'CollectorNumber' if has_cn else 'NULL'} FROM Cards")
+                for row in cursor.execute(query):
+                    grp_id, title_id, set_code, cn = row
+                    if title_id in loc_map:
+                        lookup[grp_id] = {
+                            "name": loc_map[title_id],
+                            "set": (set_code or "").upper(),
+                            "collector_number": str(cn) if cn else "",
+                        }
+                if len(lookup) > 1000:
+                    conn.close()
+                    log(f"  Loaded {len(lookup)} cards from local MTGA files.")
+                    return lookup
                 conn.close()
             except sqlite3.Error:
                 continue
     except Exception as e:
         log(f"  (local MTGA scan skipped: {e})")
+    if lookup:
+        log(f"  Loaded {len(lookup)} cards from local MTGA files.")
     return lookup
 
 
@@ -376,7 +422,15 @@ def _merged_runs(mask, gap):
 
 
 def scan_collection(pm, db):
-    """Anchor-free scan: return the largest {grpId: count} block found in memory."""
+    """Anchor-free scan of process memory.
+
+    Returns (owned, dropped): `owned` is the largest {grpId: count} block whose ids
+    validate against the card database; `dropped` is {grpId: count} for entries sitting
+    inside that same collection block whose grpId is in neither the Scryfall DB nor
+    MTGA's bundled files (e.g. sets Scryfall hasn't assigned arena_ids to). Those cards
+    are genuinely owned but unnameable — the caller logs them instead of silently
+    discarding them.
+    """
     if np is None:
         raise Exception("numpy is required for scanning. Install it with: pip install numpy")
 
@@ -391,6 +445,7 @@ def scan_collection(pm, db):
     GAP = 32           # bridge gaps from deleted slots / cards missing from the database
 
     best = {}
+    best_dropped = {}
     print_progress(0, total, prefix="Mem Scan:", suffix="Starting", length=25)
     for ri, (base, size) in enumerate(regions):
         try:
@@ -419,8 +474,17 @@ def scan_collection(pm, db):
                                                  counts[s:e][span].tolist())}
                             if len(d) > len(best):
                                 best = d
+                                # Entries inside the same collection block that failed
+                                # id validation but carry a plausible owned-count: most
+                                # likely real cards we just can't name yet.
+                                blk_counts = counts[s:e]
+                                unknown = (~span) & (blk_counts >= 1) & (blk_counts <= MAX_COUNT)
+                                best_dropped = {
+                                    int(i): int(c)
+                                    for i, c in zip(ids[s:e][unknown].tolist(),
+                                                    blk_counts[unknown].tolist())}
         print_progress(ri + 1, total, prefix="Mem Scan:", suffix=f"{len(best)} cards", length=25)
-    return best
+    return best, best_dropped
 
 
 def connect_to_mtga(process_override=None):
@@ -519,7 +583,7 @@ def main():
         sys.exit(3)
 
     log("Scanning memory for collection data (no anchors needed)...")
-    collection = scan_collection(pm, db)
+    collection, dropped = scan_collection(pm, db)
     if not collection:
         log("\nCould not locate your collection in memory.")
         log("Open MTG Arena, visit the Collection or Decks tab and scroll through your")
@@ -529,10 +593,23 @@ def main():
     log(f"\n[Success] Found {len(collection)} unique cards "
         f"({sum(collection.values())} total).")
 
+    if dropped:
+        log(f"\n[warning] {len(dropped)} owned card(s) could not be named and were "
+            f"dropped from the export — their grpId is in neither the Scryfall "
+            f"database nor MTGA's bundled card files (likely a set Scryfall hasn't "
+            f"assigned arena_ids to yet). Refresh the Scryfall DB via the mtg-db "
+            f"skill and/or let MTG Arena finish updating, then re-export.")
+        preview = sorted(dropped.items())[:40]
+        for gid, qty in preview:
+            log(f"    dropped grpId {gid} (x{qty})")
+        if len(dropped) > len(preview):
+            log(f"    ... and {len(dropped) - len(preview)} more.")
+
     processed = {}
     for cid, qty in collection.items():
         info = db.get(cid)
         if not info:
+            log(f"[warning] dropped grpId {cid} (x{qty}): no name in the card database.")
             continue
         key = (info["name"], info["set"])
         if key not in processed:

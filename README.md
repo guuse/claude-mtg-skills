@@ -161,7 +161,7 @@ The workspace holds three subfolders:
   (`1 Card Name` / `4 Lightning Bolt`), a **`.csv`** with name/quantity columns (Moxfield / Archidekt /
   MTGGoldfish / Arena exporters), or a **`.json`** export — the skills parse all three automatically.
 - **`.mtg/database/`** — the **local Scryfall card database** (`cards.sqlite` + `meta.json`), built
-  automatically on first use (a one-time ~540 MB download that becomes a ~170 MB SQLite file). Skills
+  automatically on first use (a one-time ~78 MB gzipped download, about 600 MB decompressed, that becomes a ~170 MB SQLite file). Skills
   query this instead of the Scryfall API, so builds are fast and don't get rate-limited. It's refreshed
   when you ask, and the skills offer to update it once it's more than 30 days old. It's rebuilt per
   machine by default, but can optionally be **shared across machines via Git LFS** (`sync.py
@@ -175,7 +175,7 @@ The workspace holds three subfolders:
   Commander inclusions); optionally `archidekt.com` / `api2.moxfield.com` to import a deck by link.
   All requests use a descriptive User-Agent, prefer structured JSON endpoints, and retry transient
   failures with backoff; blocked HTML sites are never scraped. The first build downloads Scryfall's
-  bulk card file (~540 MB) once into a local SQLite database; after that, card lookups are local and
+  bulk card file (~78 MB compressed) once into a local SQLite database; after that, card lookups are local and
   only `function:` tag queries and refreshes hit the network. If your environment blocks these domains,
   the skills say which source failed and fall back to the local database and Claude's own MTG knowledge
   (flagged as reduced confidence — prices and the newest cards won't be verified). See each skill's

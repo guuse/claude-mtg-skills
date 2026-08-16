@@ -146,7 +146,7 @@ already owns.
 
 **Scryfall reads come from the local card database** (`scripts/analyze_deck.py` and `scripts/scryfall_search.py`
 both read `.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the **mtg-db** skill; built
-automatically on first use, one-time ~540 MB). If it reports the data is **stale (>30 days)**, mention prices
+automatically on first use, one-time ~78 MB compressed). If it reports the data is **stale (>30 days)**, mention prices
 and the staple signal may have shifted and **ask** whether to refresh first. `function:`/`otag:` (Tagger)
 queries route to the live API automatically.
 

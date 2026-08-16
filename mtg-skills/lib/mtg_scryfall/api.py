@@ -81,15 +81,36 @@ def named(name):
 def bulk_metadata(kind="default_cards"):
     """Return the Scryfall bulk-data descriptor for `kind` (default: default_cards).
 
-    The descriptor carries `download_uri`, `updated_at`, `size`, and an `id` we use
-    as the version marker for staleness checks. One small call — negligible against
+    The descriptor carries a download URI, `updated_at`, a byte size, and an `id` we
+    use as the version marker for staleness checks. One small call, negligible against
     the card-query volume the database removes.
+
+    Read the URI and size through `bulk_uri()` / `bulk_size()` rather than indexing
+    the dict: Scryfall renamed `download_uri` to `jsonl_download_uri` and `size` to
+    `compressed_size` when bulk data moved to JSONL.
     """
     data = get_json(f"{API}/bulk-data")
     for entry in data.get("data", []):
         if entry.get("type") == kind:
             return entry
     raise RuntimeError(f"Scryfall bulk-data has no entry of type {kind!r}")
+
+
+def bulk_uri(entry):
+    """Download URI from a bulk descriptor, tolerating Scryfall's field rename.
+
+    `download_uri` became `jsonl_download_uri` with the JSONL migration. Both names
+    are accepted so this keeps working if either is present.
+    """
+    for key in ("jsonl_download_uri", "download_uri"):
+        if entry.get(key):
+            return entry[key]
+    raise RuntimeError(f"bulk descriptor has no download uri; keys: {sorted(entry)}")
+
+
+def bulk_size(entry):
+    """Byte size from a bulk descriptor (`compressed_size` since the JSONL migration)."""
+    return entry.get("compressed_size") or entry.get("size") or 0
 
 
 def download_to(url, dest, progress=None, chunk=1 << 20):

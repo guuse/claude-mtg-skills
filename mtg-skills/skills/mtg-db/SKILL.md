@@ -41,7 +41,7 @@ how current the data is.
   staleness check).
 
 Source: Scryfall's **Default Cards** bulk file (the only bulk export carrying per-printing prices
-and Arena availability). It's a **~540 MB download** that builds into a **~170 MB** SQLite file in
+and Arena availability). It's a **~78 MB gzipped download** (about 600 MB decompressed) that builds into a **~170 MB** SQLite file in
 roughly half a minute. The raw JSON is discarded after the build; only the SQLite + meta remain.
 
 ## How to drive it
@@ -62,7 +62,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/build_database.py" --json     # machine-read
 
 By default each machine builds its own copy of `cards.sqlite` — it's a rebuildable cache, so it's
 git-ignored and doesn't travel with the synced decks/collection. If the user would rather **share the
-exact built database** (e.g. to skip the 540 MB Scryfall download on a second machine, or to keep
+exact built database** (e.g. to skip the 78 MB Scryfall download on a second machine, or to keep
 prices identical across machines), the **mtg-sync** skill can ship it via **Git LFS**:
 
 - **After you build or `--refresh`** the database, offer to push it by running the **mtg-sync** skill
@@ -82,7 +82,7 @@ never on a routine deck `--push`, so normal deck saves stay small.
 Each deckbuilding skill checks the database at the **start** of a build and behaves as follows:
 
 - **Missing database → build it, don't ask.** Tell the user it's a one-time setup
-  ("setting up the local card database — one-time ~540 MB download, ~30 s"), build it, then carry on
+  ("setting up the local card database — one-time ~78 MB download, ~30 s"), build it, then carry on
   with their request. This is what makes "the database always exists before any other skill runs"
   true without the user having to sequence anything.
 - **Present but stale (older than 30 days) → ask first.** A usable database already exists, so

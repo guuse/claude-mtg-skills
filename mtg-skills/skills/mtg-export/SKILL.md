@@ -58,7 +58,7 @@ user, so git uses the user's SSH key and config (see *Sync* below for why this m
 1. **Ensure the local Scryfall database exists and carries the Arena-id map** (the
    `arena_cards` table). Do this via the **mtg-db** skill: check its status and, if the
    database is missing or was built before this skill existed, refresh it (a one-time
-   ~540 MB download, ~30 s). The deck skills auto-build this database too, so on a machine
+   ~78 MB download, ~30 s). The deck skills auto-build this database too, so on a machine
    that has already built a deck it's usually present — it just needs a refresh if it predates
    the Arena map.
 

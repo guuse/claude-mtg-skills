@@ -128,7 +128,7 @@ just the pretty view. See [SYNCING.md](../../../SYNCING.md).
   git-ignored by default so routine deck saves stay lean, and each machine can always rebuild it
   locally in ~30 s (mtg-db). When you'd rather **share** the exact built database across machines,
   `--push-database` ships it and `--pull-database` fetches it — instead of every machine
-  re-downloading 540 MB from Scryfall and rebuilding.
+  re-downloading 78 MB compressed from Scryfall and rebuilding.
 
 ### Syncing the card database (Git LFS)
 

@@ -329,7 +329,7 @@ Full endpoint/fallback table: `references/data-sources.md`. Concretely:
 **Scryfall reads come from the local card database.** The bundled `scripts/scryfall_search.py`
 queries a **local SQLite database** (`.mtg/database/cards.sqlite`) built from Scryfall's bulk data
 instead of hammering the API — see the **mtg-db** skill. The database is built
-**automatically on first use** (a one-time ~540 MB download), so you don't need to run anything
+**automatically on first use** (a one-time ~78 MB download), so you don't need to run anything
 first; just call the script. At the **start of a build**, if the script reports the data is **stale
 (older than 30 days)**, tell the user prices may have moved and **ask** whether to refresh it (via
 the mtg-db skill) before continuing — proceed either way. `function:`/`otag:` (Tagger)

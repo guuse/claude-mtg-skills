@@ -303,7 +303,7 @@ shipping a low score.
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local
 SQLite database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the
 **mtg-db** skill) instead of the API. It's built **automatically on first use** (one-time
-~540 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
+~78 MB download); just call the script. At the **start**, if it reports the data is **stale (>30 days)**,
 tell the user and **ask** whether to refresh before continuing (for Arena this matters less — only rarity,
 Arena availability, and Standard legality are used, and those move only when a set releases). Any
 `function:`/`otag:` (Tagger) query routes to the live API automatically.

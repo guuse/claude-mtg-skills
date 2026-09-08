@@ -206,7 +206,7 @@ to the local Scryfall DB ordered by EDHREC rank and say so.
 
 **Scryfall reads come from the local card database.** `scripts/scryfall_search.py` queries a **local SQLite
 database** (`.mtg/database/cards.sqlite`, built from Scryfall bulk data — see the **mtg-db** skill) instead
-of the API. It's built **automatically on first use** (one-time ~540 MB download); just call the script. If
+of the API. It's built **automatically on first use** (one-time ~78 MB download); just call the script. If
 it reports the data is **stale (>30 days)**, mention prices may have moved and **ask** whether to refresh
 before continuing. `function:`/`otag:` (Tagger) tags route to the live API automatically. Retrieval, in order
 of preference:

@@ -6,10 +6,16 @@ cheapest across printings; availability flags (arena/paper/mtgo) and `funny` are
 "extra" objects (tokens, emblems, art series, …) are dropped so normal searches don't
 surface them — matching Scryfall's default of hiding extras.
 
-Memory-safe: the bulk array is streamed object-by-object into a staging table, then
-collapsed with SQL (no giant in-memory list, no full json.load of ~150 MB).
+Memory-safe: the bulk file is streamed object-by-object into a staging table, then
+collapsed with SQL (no giant in-memory list, no full json.load of the whole file).
+
+Scryfall serves bulk data as gzipped JSONL (one card object per line). Older files
+were a single top-level JSON array. Both are read, and gzip is detected from the
+magic bytes rather than the filename so temp files with any suffix work.
 """
 
+import gzip
+import io
 import json
 import os
 import sqlite3
@@ -134,16 +140,69 @@ def arena_row(card):
 _ARENA_COLS = ["arena_id", "name", "set_code", "collector_number"]
 
 
+GZIP_MAGIC = b"\x1f\x8b"
+
+
+def _open_bulk(path):
+    """Open a bulk file as text, transparently decompressing gzip.
+
+    Detected from the magic bytes, not the extension, because `build_database()`
+    streams the download into a `tempfile` whose suffix says nothing useful.
+    """
+    with open(path, "rb") as fh:
+        magic = fh.read(2)
+    if magic == GZIP_MAGIC:
+        return io.TextIOWrapper(gzip.open(path, "rb"), encoding="utf-8")
+    return open(path, encoding="utf-8")
+
+
 def iter_bulk_objects(path, bufsize=1 << 20):
-    """Yield each object from a top-level JSON array file without loading it all.
+    """Yield each card object from a Scryfall bulk file.
+
+    Handles both shapes, gzipped or not:
+
+    * **JSONL** (current): one complete JSON object per line, no wrapping array.
+    * **JSON array** (legacy): a single top-level `[...]`.
+
+    The shape is decided by the first non-whitespace character. This matters more
+    than it looks: a JSONL file fed to the old array-only reader does not raise, it
+    finds the first `[` inside some card's `"multiverse_ids":[...]` and decodes
+    garbage from the middle of a record, producing a near-empty database silently.
+    """
+    with _open_bulk(path) as f:
+        while True:
+            ch = f.read(1)
+            if not ch:
+                return
+            if not ch.isspace():
+                break
+        if ch == "{":
+            first = f.readline()
+            try:
+                yield json.loads(ch + first)
+            except json.JSONDecodeError:
+                pass
+            for line in f:
+                line = line.strip().rstrip(",")
+                if not line or line in ("[", "]"):
+                    continue
+                try:
+                    yield json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+            return
+    yield from _iter_json_array(path, bufsize)
+
+
+def _iter_json_array(path, bufsize=1 << 20):
+    """Stream a top-level JSON array without loading it all.
 
     Uses JSONDecoder.raw_decode over a sliding text buffer so peak memory is roughly
     one chunk plus one card object.
     """
     dec = json.JSONDecoder()
-    with open(path, encoding="utf-8") as f:
+    with _open_bulk(path) as f:
         buf = ""
-        # Advance to the opening bracket.
         while "[" not in buf:
             chunk = f.read(bufsize)
             if not chunk:
@@ -167,7 +226,7 @@ def iter_bulk_objects(path, bufsize=1 << 20):
             except json.JSONDecodeError:
                 chunk = f.read(bufsize)
                 if not chunk:
-                    return  # truncated/end
+                    return
                 buf += chunk
                 continue
             yield obj
@@ -316,7 +375,7 @@ def build_database(dest=None, force=False, progress=None, keep_json=False):
 
     meta_entry = api.bulk_metadata("default_cards")
     if progress:
-        size_mb = (meta_entry.get("size") or 0) / 1e6
+        size_mb = api.bulk_size(meta_entry) / 1e6
         progress("downloading", f"{size_mb:.0f} MB")
 
     fd, json_path = tempfile.mkstemp(suffix=".json", dir=os.path.dirname(os.path.abspath(db_path)))
@@ -325,7 +384,7 @@ def build_database(dest=None, force=False, progress=None, keep_json=False):
         def dl_progress(done, total):
             if progress and total:
                 progress("download_pct", int(done * 100 / total))
-        api.download_to(meta_entry["download_uri"], json_path, progress=dl_progress)
+        api.download_to(api.bulk_uri(meta_entry), json_path, progress=dl_progress)
         if progress:
             progress("building", None)
         stats = build_from_json(json_path, db_path, progress=progress)
@@ -337,7 +396,7 @@ def build_database(dest=None, force=False, progress=None, keep_json=False):
         "source": "scryfall/default_cards",
         "bulk_id": meta_entry.get("id"),
         "bulk_updated_at": meta_entry.get("updated_at"),
-        "bulk_size": meta_entry.get("size"),
+        "bulk_size": api.bulk_size(meta_entry),
         "built_at": _utcnow_iso(),
         "unique_cards": stats["unique_cards"],
         "arena_cards": stats["arena_cards"],

@@ -176,7 +176,7 @@ in its own folder, conflicts are practically impossible.
 The card database is a rebuildable cache, so by default it's git-ignored and **not** synced — each
 machine rebuilds it in ~30 s and routine deck syncs stay small. But you can also **share the exact
 built `cards.sqlite`** across machines, so a second computer fetches it instead of re-downloading
-540 MB from Scryfall and rebuilding (and so prices stay identical everywhere).
+78 MB compressed from Scryfall and rebuilding (and so prices stay identical everywhere).
 
 Because `cards.sqlite` is ~170 MB — over GitHub's **100 MB** per-file limit on plain git — it's
 stored with **[Git LFS](https://git-lfs.com)**. The setup is automatic: `--bootstrap` / `--init`

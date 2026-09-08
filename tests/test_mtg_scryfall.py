@@ -1,6 +1,6 @@
 """Offline smoke tests for the shared mtg_scryfall library.
 
-No network and no 540 MB download: a small crafted card set is built into a temporary
+No network and no bulk download: a small crafted card set is built into a temporary
 SQLite database, then the build/collapse logic and the Scryfall->SQL query translator
 are exercised against it. The one thing that genuinely needs the network — routing
 `function:`/`otag:` and unsupported operators to the live API — is tested at the

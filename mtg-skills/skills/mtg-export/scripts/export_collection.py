@@ -27,6 +27,7 @@ Usage:
   python export_collection.py --db PATH         # explicit cards.sqlite location
   python export_collection.py --out-dir DIR     # explicit collection output directory
   python export_collection.py --process NAME    # override the Arena process name
+  python export_collection.py --gap N           # bridge longer runs of unknown grpIds (default 256)
 
 Exit codes: 0 success · 2 setup/dependency problem · 3 could not locate the collection.
 """
@@ -421,7 +422,13 @@ def _merged_runs(mask, gap):
     return merged
 
 
-def scan_collection(pm, db):
+# Bridge gaps from deleted slots / cards missing from the database. The collection map
+# can hold long runs of grpIds nothing can name (e.g. Arena-only printings): 32 split a
+# real collection at gaps of 35-82 entries and silently dropped every newer set.
+DEFAULT_GAP = 256
+
+
+def scan_collection(pm, db, gap=DEFAULT_GAP):
     """Anchor-free scan of process memory.
 
     Returns (owned, dropped): `owned` is the largest {grpId: count} block whose ids
@@ -430,6 +437,10 @@ def scan_collection(pm, db):
     MTGA's bundled files (e.g. sets Scryfall hasn't assigned arena_ids to). Those cards
     are genuinely owned but unnameable — the caller logs them instead of silently
     discarding them.
+
+    `gap` is the longest run of non-validating entries bridged inside one block. If other
+    sizeable blocks sit just beyond it in the same memory row, a warning is logged —
+    they're most likely the rest of a collection split by a run longer than `gap`.
     """
     if np is None:
         raise Exception("numpy is required for scanning. Install it with: pip install numpy")
@@ -442,10 +453,12 @@ def scan_collection(pm, db):
 
     MIN_ENTRIES = 30   # ignore tiny coincidental blocks
     MAX_COUNT = 1000   # owned counts are small; rejects pointer/garbage values
-    GAP = 32           # bridge gaps from deleted slots / cards missing from the database
+    NEAR = 4 * gap     # how close a skipped block must be to the winner to warn about it
 
     best = {}
     best_dropped = {}
+    best_where = None  # (row key, start, end) of the winning block
+    row_runs = {}      # row key -> [(start, end, valid entries)] for every sizeable run
     print_progress(0, total, prefix="Mem Scan:", suffix="Starting", length=25)
     for ri, (base, size) in enumerate(regions):
         try:
@@ -465,15 +478,20 @@ def scan_collection(pm, db):
                             continue
                         ids, counts = ids[:m], counts[:m]
                         mask = np.isin(ids, valid) & (counts >= 1) & (counts <= MAX_COUNT)
-                        for s, e in _merged_runs(mask, GAP):
+                        key = (ri, stride, align)
+                        for s, e in _merged_runs(mask, gap):
                             span = mask[s:e]
-                            if int(span.sum()) <= len(best):
+                            k = int(span.sum())
+                            if k >= MIN_ENTRIES:
+                                row_runs.setdefault(key, []).append((s, e, k))
+                            if k <= len(best):
                                 continue
                             d = {int(i): int(c)
                                  for i, c in zip(ids[s:e][span].tolist(),
                                                  counts[s:e][span].tolist())}
                             if len(d) > len(best):
                                 best = d
+                                best_where = (key, s, e)
                                 # Entries inside the same collection block that failed
                                 # id validation but carry a plausible owned-count: most
                                 # likely real cards we just can't name yet.
@@ -484,6 +502,16 @@ def scan_collection(pm, db):
                                     for i, c in zip(ids[s:e][unknown].tolist(),
                                                     blk_counts[unknown].tolist())}
         print_progress(ri + 1, total, prefix="Mem Scan:", suffix=f"{len(best)} cards", length=25)
+
+    if best_where:
+        key, bs, be = best_where
+        near = [(s, e, k) for s, e, k in row_runs.get(key, [])
+                if (e <= bs and bs - e <= NEAR) or (s >= be and s - be <= NEAR)]
+        if near:
+            log(f"\n[warning] {len(near)} other block(s) with {sum(k for _, _, k in near)} "
+                f"card entries sit just outside the exported block — the collection may be "
+                f"split by a run of unknown grpIds longer than --gap {gap}. If cards are "
+                f"missing, re-run with a larger --gap.")
     return best, best_dropped
 
 
@@ -551,6 +579,9 @@ def main():
     ap.add_argument("--db", help="Explicit cards.sqlite path (default: workspace database).")
     ap.add_argument("--out-dir", help="Explicit collection output directory.")
     ap.add_argument("--process", help="Override the MTG Arena process name.")
+    ap.add_argument("--gap", type=int, default=DEFAULT_GAP,
+                    help="Longest run of unrecognised entries to bridge inside the collection "
+                         f"block (default: {DEFAULT_GAP}). Raise it if the export is missing cards.")
     args = ap.parse_args()
 
     log(f"MTGA Collection Exporter | {PLATFORM}")
@@ -583,7 +614,7 @@ def main():
         sys.exit(3)
 
     log("Scanning memory for collection data (no anchors needed)...")
-    collection, dropped = scan_collection(pm, db)
+    collection, dropped = scan_collection(pm, db, gap=args.gap)
     if not collection:
         log("\nCould not locate your collection in memory.")
         log("Open MTG Arena, visit the Collection or Decks tab and scroll through your")

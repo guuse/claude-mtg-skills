@@ -103,6 +103,9 @@ layout works too as long as the skills sit side by side.)
 --db PATH            Use an explicit cards.sqlite (default: the resolved workspace database).
 --out-dir DIR        Write the CSV somewhere other than <workspace>/collection/.
 --process NAME       Override the MTGA process name (default: MTGA.exe / MTGA / mtga).
+--gap N              Longest run of unrecognised entries bridged inside the collection
+                     block (default: 256). Raise it if the export warns about nearby blocks
+                     or is missing whole sets.
 ```
 
 The script prints progress to **stderr** and the single written CSV path to **stdout**. Exit
@@ -138,6 +141,9 @@ the deckbuilding skills read the CSV from the local workspace regardless.
 
 - **"Collection not found" / partial export** → MTGA wasn't fully loaded. Open the
   Collection/Decks tab, scroll through the whole collection, then re-run.
+- **Whole sets missing, or a "[warning] … other block(s) … sit just outside" message** → the
+  collection map is split by a long run of grpIds nothing can name (e.g. Arena-only printings).
+  Re-run with a larger `--gap` (e.g. `--gap 1024`).
 - **macOS "Cannot access game memory"** → re-run under `sudo`. From a non-interactive shell use
   the askpass helper (`SUDO_ASKPASS=…/macos-askpass.sh sudo -A python3 …`) so the password prompt
   is a GUI dialog rather than a TTY; see *macOS: the scan needs root* above.
